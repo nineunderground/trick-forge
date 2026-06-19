@@ -11,7 +11,7 @@ import { LOCAL_PLAYER_SEAT } from '../core/session/types'
 import { CardView, HandBacks } from './CardView'
 import { HelpModal } from './HelpModal'
 import { BackIcon, HelpIcon, IconButton, LeaveIcon } from './IconButton'
-import { getOpponents, getSeatPositionClass } from './table-layout'
+import { getOpponents, getSeatGridArea, getSeatPositionClass } from './table-layout'
 
 interface GameBoardProps {
   profile: GameProfile
@@ -23,7 +23,6 @@ interface GameBoardProps {
 
 function OpponentSeat({
   player,
-  totalPlayers,
   isActive,
   isHandStarter,
 }: {
@@ -32,10 +31,8 @@ function OpponentSeat({
   isActive: boolean
   isHandStarter: boolean
 }) {
-  const position = getSeatPositionClass(player.seatIndex, totalPlayers)
-
   return (
-    <div className={`seat seat--${position} ${isActive ? 'seat--active' : ''}`}>
+    <div className={`seat ${isActive ? 'seat--active' : ''}`}>
       <div className="seat-info">
         <span className="seat-name">
           {player.name}
@@ -116,21 +113,29 @@ export function GameBoard({ profile, state, onAction, onBackToSetup, onLeave }: 
         <div className="help-rules">{helpText}</div>
       </HelpModal>
 
-      <div className="poker-table">
-        {opponents.map((player) => {
-          const playerIndex = state.players.indexOf(player)
-          return (
-            <OpponentSeat
-              key={player.id}
-              player={player}
-              totalPlayers={state.players.length}
-              isActive={state.currentPlayerIndex === playerIndex && state.phase === 'playing'}
-              isHandStarter={playerIndex === state.handStarterIndex}
-            />
-          )
-        })}
+      <div className="table-arena">
+        <div className="table-grid">
+          {opponents.map((player) => {
+            const playerIndex = state.players.indexOf(player)
+            const position = getSeatPositionClass(player.seatIndex, state.players.length)
+            return (
+              <div
+                key={player.id}
+                className={`seat-wrap seat-wrap--${position}`}
+                style={{ gridArea: getSeatGridArea(position) }}
+              >
+                <OpponentSeat
+                  player={player}
+                  totalPlayers={state.players.length}
+                  isActive={
+                    state.currentPlayerIndex === playerIndex && state.phase === 'playing'
+                  }
+                  isHandStarter={playerIndex === state.handStarterIndex}
+                />
+              </div>
+            )
+          })}
 
-        <div className="table-center">
           <div className="table-felt">
             {state.table ? (
               <>

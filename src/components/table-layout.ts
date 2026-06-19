@@ -19,15 +19,9 @@ export function getSeatPositionClass(
   return layout[relative] ?? 'top'
 }
 
-export function orderPlayersForTable(
-  players: PlayerState[],
-  localSeat = LOCAL_PLAYER_SEAT,
-): PlayerState[] {
-  const n = players.length
-  return Array.from({ length: n }, (_, i) => {
-    const seatIndex = (localSeat + i) % n
-    return players.find((p) => p.seatIndex === seatIndex)!
-  })
+/** Maps a seat position to a CSS grid area (see .table-grid in App.css). */
+export function getSeatGridArea(position: string): string {
+  return `seat-${position}`
 }
 
 export function getOpponents(
