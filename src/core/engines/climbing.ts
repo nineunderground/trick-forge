@@ -38,11 +38,7 @@ export function createPlayersFromSeats(seats: SeatConfig[]): PlayerState[] {
   }))
 }
 
-export function initClimbingGame(
-  profile: GameProfile,
-  seats: SeatConfig[],
-): ClimbingGameState {
-  const players = createPlayersFromSeats(seats)
+function dealHands(profile: GameProfile, players: PlayerState[]): Card[] {
   let deck = shuffle(
     createDeck(
       profile.spec.deck.suits,
@@ -54,20 +50,30 @@ export function initClimbingGame(
   const cardsPerPlayer = profile.spec.deal.cardsPerPlayer
   for (const player of players) {
     player.hand = sortHand(deck.splice(0, cardsPerPlayer))
+    player.passed = false
   }
+
+  return deck
+}
+
+export function initClimbingGame(
+  profile: GameProfile,
+  seats: SeatConfig[],
+): ClimbingGameState {
+  const players = createPlayersFromSeats(seats)
+  const deck = dealHands(profile, players)
+  const handStarterIndex = Math.floor(Math.random() * players.length)
 
   return {
     family: 'climbing',
     phase: 'playing',
     players,
     deck,
-    currentPlayerIndex: 0,
-    handLeaderIndex: 0,
+    currentPlayerIndex: handStarterIndex,
+    handStarterIndex,
     table: null,
-    consecutivePasses: 0,
-    mustTakeFromPrevious: false,
-    pendingTakeFrom: null,
-    log: [`New hand. ${players[0].name} leads.`],
+    allowHandBombOnOpen: false,
+    log: [`New hand. ${players[handStarterIndex].name} leads the first round.`],
   }
 }
 
@@ -86,10 +92,11 @@ function tableCount(state: ClimbingGameState): number {
   return state.table?.cards.length ?? 0
 }
 
-function openingCounts(hand: Card[]): number[] {
-  const counts = [1]
-  if (handIsBomb(hand)) counts.push(hand.length)
-  return counts
+function openingCounts(state: ClimbingGameState, hand: Card[]): number[] {
+  if (state.allowHandBombOnOpen && handIsBomb(hand)) {
+    return [1, hand.length]
+  }
+  return [1]
 }
 
 export function getValidPlays(state: ClimbingGameState, hand: Card[]): ValidPlay[] {
@@ -97,7 +104,7 @@ export function getValidPlays(state: ClimbingGameState, hand: Card[]): ValidPlay
   const target = state.table ? setValue(state.table.cards) : null
   const requiredCounts = state.table
     ? [tableCount(state), tableCount(state) + 1]
-    : openingCounts(hand)
+    : openingCounts(state, hand)
 
   const n = hand.length
   for (const count of requiredCounts) {
@@ -112,6 +119,11 @@ export function getValidPlays(state: ClimbingGameState, hand: Card[]): ValidPlay
   }
 
   return plays
+}
+
+export function mustTakeFromTable(state: ClimbingGameState, handSize: number, playSize: number): boolean {
+  if (!state.table) return false
+  return handSize - playSize > 0
 }
 
 function combine(cards: Card[], k: number, fn: (combo: Card[]) => void): void {
@@ -159,7 +171,7 @@ export function applyAction(
     player.passed = true
     next.log.push(`${player.name} passes.`)
     if (allOthersPassed(next)) {
-      return resolveAllPass(next, profile)
+      return resolveAllPass(next)
     }
     return advanceTurn(next)
   }
@@ -176,7 +188,21 @@ export function applyAction(
     throw new Error('Invalid play')
   }
 
-  if (previousTable) {
+  player.hand = sortHand(removeCards(player.hand, action.cardIds))
+  player.passed = false
+  next.players.forEach((p) => {
+    p.passed = false
+  })
+  next.table = { cards: played, playedBy: player.id }
+  next.allowHandBombOnOpen = false
+  next.log.push(`${player.name} plays ${formatSet(played)} (${match.value}).`)
+
+  if (player.hand.length === 0) {
+    next.log.push(`${player.name} emptied their hand.`)
+    return endHand(next, profile)
+  }
+
+  if (previousTable && player.hand.length > 0) {
     const previous = previousTable.cards
     if (!action.takeCardId) {
       throw new Error('You must take a card from the previous play')
@@ -189,18 +215,6 @@ export function applyAction(
     next.log.push(`${player.name} takes ${formatCard(taken)}.`)
   }
 
-  player.hand = sortHand(removeCards(player.hand, action.cardIds))
-  player.passed = false
-  next.players.forEach((p) => {
-    p.passed = false
-  })
-  next.table = { cards: played, playedBy: player.id }
-  next.log.push(`${player.name} plays ${formatSet(played)} (${match.value}).`)
-
-  if (player.hand.length === 0) {
-    return endHand(next, profile)
-  }
-
   return advanceTurn(next)
 }
 
@@ -210,10 +224,7 @@ function advanceTurn(state: ClimbingGameState): ClimbingGameState {
   return next
 }
 
-function resolveAllPass(
-  state: ClimbingGameState,
-  profile: GameProfile,
-): ClimbingGameState {
+function resolveAllPass(state: ClimbingGameState): ClimbingGameState {
   const next = structuredClone(state)
   const leaderId = next.table?.playedBy
   const leaderIndex = next.players.findIndex((p) => p.id === leaderId)
@@ -221,18 +232,13 @@ function resolveAllPass(
   next.players.forEach((p) => {
     p.passed = false
   })
-  next.log.push('Everyone passes. New round.')
+  next.log.push('Round ends. Table cleared.')
 
   if (leaderIndex >= 0) {
     const leader = next.players[leaderIndex]
-    if (handIsBomb(leader.hand)) {
-      next.log.push(`${leader.name} plays a hand bomb (${leader.hand.length} cards).`)
-      leader.hand = []
-      return endHand(next, profile)
-    }
+    next.allowHandBombOnOpen = true
     next.currentPlayerIndex = leaderIndex
-    next.handLeaderIndex = leaderIndex
-    next.log.push(`${leader.name} leads the round.`)
+    next.log.push(`${leader.name} starts the new round.`)
   }
 
   return next
@@ -240,6 +246,8 @@ function resolveAllPass(
 
 function endHand(state: ClimbingGameState, profile: GameProfile): ClimbingGameState {
   const next = structuredClone(state)
+  next.table = null
+  next.allowHandBombOnOpen = false
   const perCard = profile.spec.scoring.pointsPerRemainingCard
 
   for (const player of next.players) {
@@ -254,8 +262,15 @@ function endHand(state: ClimbingGameState, profile: GameProfile): ClimbingGameSt
   const someoneReached = next.players.some((p) => p.score >= threshold)
   if (someoneReached) {
     next.phase = 'finished'
-    const winner = [...next.players].sort((a, b) => a.score - b.score)[0]
-    next.log.push(`Game over. ${winner.name} wins with ${winner.score} pts.`)
+    const minScore = Math.min(...next.players.map((p) => p.score))
+    const winners = next.players.filter((p) => p.score === minScore)
+    if (winners.length > 1) {
+      next.log.push(
+        `Game over. Tie: ${winners.map((w) => w.name).join(', ')} with ${minScore} pts.`,
+      )
+    } else {
+      next.log.push(`Game over. ${winners[0].name} wins with ${minScore} pts.`)
+    }
     return next
   }
 
@@ -265,24 +280,12 @@ function endHand(state: ClimbingGameState, profile: GameProfile): ClimbingGameSt
 
 function dealNextHand(state: ClimbingGameState, profile: GameProfile): ClimbingGameState {
   const next = structuredClone(state)
-  let deck = shuffle(
-    createDeck(
-      profile.spec.deck.suits,
-      profile.spec.deck.ranks,
-      profile.spec.deck.copies ?? 1,
-    ),
-  )
-
-  for (const player of next.players) {
-    player.hand = sortHand(deck.splice(0, profile.spec.deal.cardsPerPlayer))
-    player.passed = false
-  }
-
-  next.deck = deck
+  next.deck = dealHands(profile, next.players)
   next.phase = 'playing'
   next.table = null
-  next.currentPlayerIndex = (next.handLeaderIndex + 1) % next.players.length
-  next.handLeaderIndex = next.currentPlayerIndex
+  next.allowHandBombOnOpen = false
+  next.handStarterIndex = (next.handStarterIndex + 1) % next.players.length
+  next.currentPlayerIndex = next.handStarterIndex
   next.log.push(`${next.players[next.currentPlayerIndex].name} leads the next hand.`)
   return next
 }
@@ -307,7 +310,7 @@ export function chooseRandomAiAction(state: ClimbingGameState): PlayerAction {
   const pick = valid[Math.floor(Math.random() * valid.length)]
   const action: PlayAction = { type: 'play', cardIds: pick.cardIds }
 
-  if (state.table) {
+  if (state.table && player.hand.length > pick.cardIds.length) {
     const previous = state.table.cards
     action.takeCardId = previous[Math.floor(Math.random() * previous.length)].id
   }

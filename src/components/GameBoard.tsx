@@ -34,7 +34,8 @@ export function GameBoard({ profile, state, onAction }: GameBoardProps) {
       play.cardIds.every((id) => selected.includes(id)),
   )
 
-  const mustTake = Boolean(state.table && isHumanTurn)
+  const mustTake =
+    Boolean(state.table && isHumanTurn) && localPlayer.hand.length > selected.length
 
   function toggleCard(id: string) {
     if (!isHumanTurn) return

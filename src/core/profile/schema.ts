@@ -43,6 +43,7 @@ const climbingRulesSchema = z.object({
   }),
   onBeatPrevious: z.object({
     takeOneCardFromPreviousSet: z.boolean(),
+    skipTakeWhenHandEmpty: z.boolean().optional(),
   }),
   pass: z.object({
     allowed: z.boolean(),
@@ -57,6 +58,7 @@ const climbingRulesSchema = z.object({
   }),
   handBomb: z.object({
     allCardsSameSuitOrRank: z.boolean(),
+    onlyWhenOpeningRoundAfterAllPass: z.boolean().optional(),
   }),
 })
 

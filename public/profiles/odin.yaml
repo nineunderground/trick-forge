@@ -3,10 +3,10 @@ kind: GameProfile
 metadata:
   id: odin
   name: Odin
-  version: "1.0"
+  version: "1.1"
   description: >
-    Climbing card game. Empty your hand as fast as possible; each card left
-    at the end of a hand is worth 1 point. Lowest score wins.
+    Climbing card game (54 cards, ranks 1–9 in six colours). Empty your hand to
+    end a hand; score 1 point per card left. Play to 15 points; lowest score wins.
   authors:
     - Helvetiq
   tags:
@@ -52,6 +52,7 @@ spec:
         valueFromDigitsHighToLow: true
       onBeatPrevious:
         takeOneCardFromPreviousSet: true
+        skipTakeWhenHandEmpty: true
       pass:
         allowed: true
         canReenterSameRound: true
@@ -62,3 +63,4 @@ spec:
           leaderPlaysSingleOrHandBomb: true
       handBomb:
         allCardsSameSuitOrRank: true
+        onlyWhenOpeningRoundAfterAllPass: true

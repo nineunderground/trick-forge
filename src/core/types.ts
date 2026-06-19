@@ -28,11 +28,11 @@ export interface ClimbingGameState {
   players: PlayerState[]
   deck: Card[]
   currentPlayerIndex: number
-  handLeaderIndex: number
+  /** First player of the current hand (used to rotate starters between hands). */
+  handStarterIndex: number
   table: TableSet | null
-  consecutivePasses: number
-  mustTakeFromPrevious: boolean
-  pendingTakeFrom: Card[] | null
+  /** True when the table leader may open with a hand bomb (after all other players pass). */
+  allowHandBombOnOpen: boolean
   log: string[]
 }
 
