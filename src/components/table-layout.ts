@@ -6,7 +6,7 @@ const SEAT_LAYOUT: Record<number, string[]> = {
   3: ['bottom', 'top-left', 'top-right'],
   4: ['bottom', 'left', 'top', 'right'],
   5: ['bottom', 'bottom-left', 'top-left', 'top-right', 'bottom-right'],
-  6: ['bottom', 'left', 'top-left', 'top', 'top-right', 'right'],
+  6: ['bottom', 'bottom-left', 'top-left', 'top', 'top-right', 'bottom-right'],
 }
 
 export function getSeatPositionClass(
