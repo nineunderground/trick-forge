@@ -34,6 +34,8 @@ export interface ClimbingGameState {
   table: TableSet | null
   /** True when the table leader may open with a hand bomb (after all other players pass). */
   allowHandBombOnOpen: boolean
+  /** Cards removed from play (rest of beaten sets, cleared table, etc.). */
+  discard: Card[]
   log: string[]
 }
 

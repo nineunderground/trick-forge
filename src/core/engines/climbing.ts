@@ -75,6 +75,7 @@ export function initClimbingGame(
     handStarterIndex: starter,
     table: null,
     allowHandBombOnOpen: false,
+    discard: [],
     log: [`New hand. ${players[starter].name} leads the first round.`],
   }
 }
@@ -213,7 +214,11 @@ export function applyAction(
     if (!taken) {
       throw new Error('Invalid card to take')
     }
-    player.hand.push(taken)
+    const discarded = previous.filter((card) => card.id !== taken.id)
+    if (discarded.length > 0) {
+      next.discard.push(...discarded)
+    }
+    player.hand = sortHand([...player.hand, taken])
     next.log.push(`${player.name} takes ${formatCard(taken)}.`)
   }
 
@@ -230,6 +235,9 @@ function resolveAllPass(state: ClimbingGameState): ClimbingGameState {
   const next = structuredClone(state)
   const leaderId = next.table?.playedBy
   const leaderIndex = next.players.findIndex((p) => p.id === leaderId)
+  if (next.table?.cards.length) {
+    next.discard.push(...next.table.cards)
+  }
   next.table = null
   next.players.forEach((p) => {
     p.passed = false
@@ -248,6 +256,9 @@ function resolveAllPass(state: ClimbingGameState): ClimbingGameState {
 
 function endHand(state: ClimbingGameState, profile: GameProfile): ClimbingGameState {
   const next = structuredClone(state)
+  if (next.table?.cards.length) {
+    next.discard.push(...next.table.cards)
+  }
   next.table = null
   next.allowHandBombOnOpen = false
   const perCard = profile.spec.scoring.pointsPerRemainingCard
@@ -285,6 +296,7 @@ function dealNextHand(state: ClimbingGameState, profile: GameProfile): ClimbingG
   next.deck = dealHands(profile, next.players)
   next.phase = 'playing'
   next.table = null
+  next.discard = []
   next.allowHandBombOnOpen = false
   next.handStarterIndex = (next.handStarterIndex + 1) % next.players.length
   next.currentPlayerIndex = next.handStarterIndex

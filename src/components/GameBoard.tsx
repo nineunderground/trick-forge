@@ -14,6 +14,7 @@ import {
 } from '../core/engines/climbing'
 import { CardView, FactionBadge, HandBacks } from './CardView'
 import { ConfirmModal } from './ConfirmModal'
+import { DiscardPile } from './DiscardPile'
 import { DraggableHand } from './DraggableHand'
 import { HelpModal } from './HelpModal'
 import { RulesHelpPanel } from './RulesHelpPanel'
@@ -282,6 +283,9 @@ export function GameBoard({
       />
 
       <div className="table-arena">
+        {matchStarted && state && (
+          <DiscardPile cards={state.discard} profile={profile} />
+        )}
         <div className="table-grid">
           {opponents.map((player) => {
             const playerIndex = state ? state.players.indexOf(player as PlayerState) : -1
