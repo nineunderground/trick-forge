@@ -81,6 +81,7 @@ const climbingRulesSchema = z.object({
 const trickTakingRulesSchema = z.object({
   roundCount: z.number().int().min(1).optional(),
   dealMode: z.enum(['increment', 'fixed']).optional(),
+  dealCap: z.enum(['deck-per-player']).optional(),
   trumpSuit: z.string().min(1).optional(),
   scoring: z.enum(['skull-king-classic']).optional(),
   bonuses: z.boolean().optional(),

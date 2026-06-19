@@ -7,6 +7,17 @@ const SEAT_LAYOUT: Record<number, string[]> = {
   4: ['bottom', 'bottom-left', 'top', 'bottom-right'],
   5: ['bottom', 'bottom-left', 'top-left', 'top-right', 'bottom-right'],
   6: ['bottom', 'bottom-left', 'top-left', 'top', 'top-right', 'bottom-right'],
+  7: ['bottom', 'bottom-left', 'top-left', 'top', 'top-right', 'right', 'bottom-right'],
+  8: [
+    'bottom',
+    'bottom-left',
+    'top-left',
+    'left',
+    'top',
+    'top-right',
+    'right',
+    'bottom-right',
+  ],
 }
 
 export function getSeatPositionClass(

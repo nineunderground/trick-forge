@@ -14,7 +14,6 @@ export function createDeck(
           id: `c${id++}`,
           suit,
           rank,
-          kind: 'numbered',
         })
       }
     }

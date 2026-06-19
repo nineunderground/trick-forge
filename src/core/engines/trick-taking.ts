@@ -19,11 +19,12 @@ import type {
   TrickPlayAction,
   TrickTakingGameState,
 } from '../types'
-import { createPlayersFromSeats } from './climbing'
+import { createPlayersFromSeats } from '../players'
 
 interface TrickTakingRules {
   roundCount: number
   dealMode: 'increment' | 'fixed'
+  dealCap: 'deck-per-player' | null
   trumpSuit: string
   scoring: 'skull-king-classic'
   bonuses: boolean
@@ -42,6 +43,7 @@ function getRules(profile: GameProfile): TrickTakingRules {
   return {
     roundCount: (raw.roundCount as number) ?? 10,
     dealMode: (raw.dealMode as 'increment' | 'fixed') ?? 'increment',
+    dealCap: (raw.dealCap as 'deck-per-player' | undefined) ?? null,
     trumpSuit: (raw.trumpSuit as string) ?? 'jolly-roger',
     scoring: 'skull-king-classic',
     bonuses: raw.bonuses !== false,
@@ -55,7 +57,7 @@ function getRules(profile: GameProfile): TrickTakingRules {
   }
 }
 
-function createSkullKingDeck(profile: GameProfile): Card[] {
+function buildDeck(profile: GameProfile): Card[] {
   const rules = getRules(profile)
   let deck = createDeck(
     profile.spec.deck.suits,
@@ -66,12 +68,21 @@ function createSkullKingDeck(profile: GameProfile): Card[] {
   return deck
 }
 
-function cardsToDeal(profile: GameProfile, roundNumber: number): number {
+function cardsToDeal(
+  profile: GameProfile,
+  roundNumber: number,
+  playerCount: number,
+): number {
   const rules = getRules(profile)
-  if (rules.dealMode === 'fixed') {
-    return profile.spec.deal.cardsPerPlayer
+  const base =
+    rules.dealMode === 'fixed' ? profile.spec.deal.cardsPerPlayer : roundNumber
+
+  if (rules.dealCap === 'deck-per-player') {
+    const cap = Math.floor(buildDeck(profile).length / playerCount)
+    return Math.min(base, cap)
   }
-  return roundNumber
+
+  return base
 }
 
 function leftOf(dealerIndex: number, playerCount: number): number {
@@ -99,8 +110,8 @@ function dealRound(
   players: PlayerState[],
   roundNumber: number,
 ): Card[] {
-  const count = cardsToDeal(profile, roundNumber)
-  let deck = shuffle(createSkullKingDeck(profile))
+  const count = cardsToDeal(profile, roundNumber, players.length)
+  let deck = shuffle(buildDeck(profile))
   const needed = count * players.length
   if (deck.length < needed) {
     throw new Error(
@@ -135,7 +146,7 @@ export function initTrickTakingGame(
     currentPlayerIndex: bidStart,
     dealerIndex: dealer,
     roundNumber,
-    cardsDealt: cardsToDeal(profile, roundNumber),
+    cardsDealt: cardsToDeal(profile, roundNumber, players.length),
     trumpSuit: rules.trumpSuit,
     bids: emptyBidRecord(players),
     tricksWon: emptyRecord(players),
@@ -154,7 +165,7 @@ export function initTrickTakingGame(
     lastRoundBonuses: {},
     lastRoundBidPoints: {},
     log: [
-      `Round ${roundNumber}: ${cardsToDeal(profile, roundNumber)} card(s) dealt. ${players[bidStart].name} bids first.`,
+      `Round ${roundNumber}: ${cardsToDeal(profile, roundNumber, players.length)} card(s) dealt. ${players[bidStart].name} bids first.`,
     ],
   }
 }
@@ -237,6 +248,10 @@ function resolveTrickWinner(
   return numbered[0] ?? trick[0]
 }
 
+function specialCardsInHand(hand: Card[]): Card[] {
+  return hand.filter((c) => cardKind(c) !== 'numbered')
+}
+
 export function getValidTrickPlays(
   state: TrickTakingGameState,
   hand: Card[],
@@ -258,7 +273,7 @@ export function getValidTrickPlays(
       (c) => cardKind(c) === 'numbered' && c.suit === state.leadSuit,
     )
     if (matching.length > 0) {
-      return [...matching, ...hand.filter((c) => !matching.includes(c))]
+      return [...matching, ...specialCardsInHand(hand)]
     }
   }
 
@@ -467,15 +482,24 @@ function computeBonuses(
 }
 
 function inferLeadSuit(trick: TrickPlay[]): string | null {
+  let trickLeadKind: 'numbered' | 'escape' | 'character' | null = null
+  let leadSuit: string | null = null
+
   for (const play of trick) {
-    if (cardKind(play.card) === 'numbered') {
-      return play.card.suit
-    }
-    if (play.card.kind === 'tigress' && play.tigressAs === 'escape') {
+    if (trickLeadKind === null) {
+      trickLeadKind = leadKindForCard(play.card, play.tigressAs)
+      if (trickLeadKind === 'numbered') {
+        leadSuit = play.card.suit
+      }
       continue
     }
+
+    if (trickLeadKind === 'escape' && !leadSuit && cardKind(play.card) === 'numbered') {
+      leadSuit = play.card.suit
+    }
   }
-  return null
+
+  return leadSuit
 }
 
 function scoreSkullKingRound(
@@ -577,7 +601,7 @@ function startNextRound(
     deck,
     dealerIndex: nextDealer,
     roundNumber: nextRound,
-    cardsDealt: cardsToDeal(profile, nextRound),
+    cardsDealt: cardsToDeal(profile, nextRound, players.length),
     bids: emptyBidRecord(players),
     tricksWon: emptyRecord(players),
     trickStacks: emptyStackRecord(players),
@@ -592,7 +616,7 @@ function startNextRound(
     lastRoundBidPoints: {},
     log: [
       ...state.log,
-      `Round ${nextRound}: ${cardsToDeal(profile, nextRound)} card(s) dealt. ${players[bidStart].name} bids first.`,
+      `Round ${nextRound}: ${cardsToDeal(profile, nextRound, players.length)} card(s) dealt. ${players[bidStart].name} bids first.`,
     ],
   }
 }

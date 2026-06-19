@@ -9,7 +9,6 @@ import {
 import type { GameProfile } from '../profile/schema'
 import type { SeatConfig } from '../session/types'
 import type { SessionSetup } from '../session/types'
-import { seatDisplayName } from '../session/setup'
 import type {
   Card,
   ClimbingGameState,
@@ -18,26 +17,13 @@ import type {
   PlayerState,
   ValidPlay,
 } from '../types'
+import { createPlayersFromSeats } from '../players'
 
 function handIsBomb(hand: Card[]): boolean {
   if (hand.length <= 1) return false
   const sameSuit = hand.every((c) => c.suit === hand[0].suit)
   const sameRank = hand.every((c) => c.rank === hand[0].rank)
   return sameSuit || sameRank
-}
-
-export function createPlayersFromSeats(seats: SeatConfig[]): PlayerState[] {
-  return seats.map((seat) => ({
-    id: `p${seat.seatIndex}`,
-    seatIndex: seat.seatIndex,
-    name: seatDisplayName(seat),
-    kind: seat.kind,
-    isHost: seat.isHost,
-    faction: seat.faction,
-    hand: [],
-    score: 0,
-    passed: false,
-  }))
 }
 
 function dealHands(profile: GameProfile, players: PlayerState[]): Card[] {

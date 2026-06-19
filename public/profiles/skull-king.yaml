@@ -3,31 +3,40 @@ kind: GameProfile
 metadata:
   id: skull-king
   name: Skull King
-  version: "1.0"
+  version: "1.1"
   description: >
-    Trick-taking pirate adventure. Bid how many tricks you will win each round;
-    score bonuses for exact bids and capturing special cards. Highest score after
-    10 rounds wins.
+    Trick-taking pirate adventure for 2–8 players. Bid how many tricks you will win
+    each round; score bonuses for exact bids and capturing special cards. Highest
+    score after 10 rounds wins.
   help: |
-    OBJECT
-    Score the most points after 10 rounds of bidding and trick-taking.
+    OVERVIEW
+    Skull King is played over 10 rounds. Each round, bid how many tricks you will
+    take, then play tricks until all dealt cards are played.
+
+    PLAYERS
+    2 to 8 players. With large groups, later rounds deal fewer cards than the round
+    number when the deck cannot deal equally (e.g. 8 players: rounds 9–10 deal 8
+    cards each, not 9–10).
 
     SETUP
-    Shuffle the deck (4 suits 1–14, Jolly Roger trump, plus special cards).
-    Round 1: deal 1 card each. Each round deals one more card per player.
+    Use the base deck only (remove Loot, Kraken, White Whale, and blank cards).
+    Round 1 deals 1 card each, round 2 deals 2, and so on up to round 10.
 
     BIDDING
-    Starting left of the dealer, each player bids how many tricks they will take (0 to hand size).
+    Starting left of the dealer, each player bids 0 to the number of cards in hand.
 
     PLAY
-    Left of dealer leads. Follow suit on numbered cards if you can; special cards may be played anytime.
-    Escape loses the trick. Pirates beat numbers. Skull King beats Pirates. Mermaid beats Skull King.
-    Tigress counts as Pirate or Escape when played.
+    Left of the dealer leads. When a suited card leads, you must play that suit if
+    you choose to play a suited card and hold it. Special cards may be played anytime.
+    Escape loses. Pirates beat suited cards. Skull King beats Pirates. Mermaid beats
+    Skull King (unless Pirate, SK, and Mermaid all appear — Mermaid always wins).
+    Tigress is declared as Pirate or Escape when played.
 
-    SCORING (Skull King classic)
-    Exact bid: +20 per trick bid. Off bid: −10 per trick off.
+    SCORING
+    Exact bid: +20 per trick bid. Off bid: −10 per trick you are off.
     Zero bid exact: +10 × cards dealt. Zero bid wrong: −10 × cards dealt.
-    Bonuses only when bid is exact: 14s (+10, Jolly Roger 14 +20), character captures (+20/+30/+40).
+    Bonuses only with an exact bid: 14s (+10 standard, +20 Jolly Roger 14),
+    character captures (+20/+30/+40).
   authors:
     - Grandpa Beck's Games
   tags:
@@ -38,7 +47,7 @@ spec:
   family: trick-taking
   players:
     min: 2
-    max: 6
+    max: 8
     default: 4
   deck:
     suits:
@@ -75,6 +84,7 @@ spec:
     trickTaking:
       roundCount: 10
       dealMode: increment
+      dealCap: deck-per-player
       trumpSuit: jolly-roger
       scoring: skull-king-classic
       bonuses: true
