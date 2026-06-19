@@ -489,6 +489,11 @@ label {
   text-align: center;
 }
 
+.table-arena > .table-grid {
+  padding-top: 5.75rem;
+  padding-right: 6rem;
+}
+
 .table-grid {
   flex: 1;
   display: grid;
