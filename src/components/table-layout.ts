@@ -4,7 +4,7 @@ import { LOCAL_PLAYER_SEAT } from '../core/session/types'
 const SEAT_LAYOUT: Record<number, string[]> = {
   2: ['bottom', 'top'],
   3: ['bottom', 'top-left', 'top-right'],
-  4: ['bottom', 'left', 'top', 'right'],
+  4: ['bottom', 'bottom-left', 'top', 'bottom-right'],
   5: ['bottom', 'bottom-left', 'top-left', 'top-right', 'bottom-right'],
   6: ['bottom', 'bottom-left', 'top-left', 'top', 'top-right', 'bottom-right'],
 }
