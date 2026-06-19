@@ -1,0 +1,56 @@
+apiVersion: trickforge/v1
+kind: GameProfile
+metadata:
+  id: odin
+  name: Odin
+  version: "1.0"
+  description: >
+    Juego de escalada (climbing). Vacía la mano lo antes posible; cada carta
+    que te quede al final de la mano vale 1 punto. Gana quien tenga menos puntos.
+  authors:
+    - Helvetiq
+  tags:
+    - climbing
+    - ladder
+spec:
+  family: climbing
+  players:
+    min: 3
+    max: 5
+    default: 4
+  deck:
+    suits:
+      - red
+      - blue
+      - green
+      - yellow
+      - purple
+      - orange
+    ranks: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    copies: 1
+  deal:
+    cardsPerPlayer: 9
+  scoring:
+    mode: penalty
+    pointsPerRemainingCard: 1
+    gameEndThreshold: 15
+    winner: lowest
+  rules:
+    climbing:
+      openingPlay: single_card
+      beatConstraint:
+        sameCountOrPlusOne: true
+        setMustBeSameSuitOrSameRank: true
+        valueFromDigitsHighToLow: true
+      onBeatPrevious:
+        takeOneCardFromPreviousSet: true
+      pass:
+        allowed: true
+        canReenterSameRound: true
+      roundEnd:
+        onEmptyHand: true
+        onAllPass:
+          discardLastSet: true
+          leaderPlaysSingleOrHandBomb: true
+      handBomb:
+        allCardsSameSuitOrRank: true
