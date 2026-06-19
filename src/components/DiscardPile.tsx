@@ -1,15 +1,13 @@
-import type { GameProfile } from '../core/profile/schema'
 import type { Card } from '../core/types'
 import { CardView } from './CardView'
 
 interface DiscardPileProps {
   cards: Card[]
-  profile: GameProfile
 }
 
 const MAX_VISIBLE = 5
 
-export function DiscardPile({ cards, profile: _profile }: DiscardPileProps) {
+export function DiscardPile({ cards }: DiscardPileProps) {
   const visible = cards.slice(-MAX_VISIBLE)
 
   return (

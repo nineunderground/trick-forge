@@ -284,7 +284,7 @@ export function GameBoard({
 
       <div className="table-arena">
         {matchStarted && state && (
-          <DiscardPile cards={state.discard} profile={profile} />
+          <DiscardPile cards={state.discard} />
         )}
         <div className="table-grid">
           {opponents.map((player) => {
