@@ -74,6 +74,11 @@ spec:
     copies: 1
   deal:
     cardsPerPlayer: 9
+  display:
+    tableCards:
+      sortBy: rank
+      direction: desc
+      tieBreakBy: suit
   scoring:
     mode: penalty
     pointsPerRemainingCard: 1

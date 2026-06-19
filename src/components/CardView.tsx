@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, DragEvent } from 'react'
 import type { Card } from '../core/types'
 import { factionColor } from '../core/colors'
 
@@ -10,6 +10,12 @@ interface CardViewProps {
   small?: boolean
   className?: string
   style?: CSSProperties
+  draggable?: boolean
+  onDragStart?: (event: DragEvent<HTMLButtonElement>) => void
+  onDragEnd?: (event: DragEvent<HTMLButtonElement>) => void
+  onDragOver?: (event: DragEvent<HTMLButtonElement>) => void
+  onDragLeave?: (event: DragEvent<HTMLButtonElement>) => void
+  onDrop?: (event: DragEvent<HTMLButtonElement>) => void
 }
 
 export function CardView({
@@ -20,16 +26,28 @@ export function CardView({
   small = false,
   className = '',
   style,
+  draggable = false,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
 }: CardViewProps) {
   const color = factionColor(card.suit)
 
   return (
     <button
       type="button"
-      className={`card ${selected ? 'selected' : ''} ${small ? 'small' : ''} ${className}`.trim()}
+      className={`card ${selected ? 'selected' : ''} ${small ? 'small' : ''} ${draggable ? 'card--draggable' : ''} ${className}`.trim()}
       style={{ borderColor: color, color, ...style }}
       disabled={disabled}
+      draggable={draggable}
       onClick={onClick}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
       aria-pressed={selected}
     >
       <span className="rank">{card.rank}</span>

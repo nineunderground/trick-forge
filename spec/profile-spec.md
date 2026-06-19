@@ -24,6 +24,11 @@ spec:
     copies: 1
   deal:
     cardsPerPlayer: 9
+  display:
+    tableCards:
+      sortBy: rank | suit | none
+      direction: asc | desc
+      tieBreakBy: rank | suit   # optional, used when primary keys tie
   scoring: { ... }
   session:
     setupSteps:
@@ -78,3 +83,9 @@ Validation errors are shown in the UI without running the engine.
 ## Reference profile
 
 See `public/profiles/odin.yaml`.
+
+## Table display
+
+`spec.display.tableCards` controls how cards on the table are ordered for display only
+(the engine keeps its own play order). For Odin, rank descending (e.g. 9-7-2) matches
+how set values are read left to right.

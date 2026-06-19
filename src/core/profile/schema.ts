@@ -34,6 +34,16 @@ const sessionSchema = z.object({
   setupSteps: z.array(setupStepSchema).min(1),
 })
 
+const tableCardsDisplaySchema = z.object({
+  sortBy: z.enum(['rank', 'suit', 'none']).optional(),
+  direction: z.enum(['asc', 'desc']).optional(),
+  tieBreakBy: z.enum(['rank', 'suit']).optional(),
+})
+
+const displaySchema = z.object({
+  tableCards: tableCardsDisplaySchema.optional(),
+})
+
 const climbingRulesSchema = z.object({
   openingPlay: z.literal('single_card'),
   beatConstraint: z.object({
@@ -82,6 +92,7 @@ export const gameProfileSchema = z
       deal: dealSchema,
       scoring: scoringSchema,
       session: sessionSchema.optional(),
+      display: displaySchema.optional(),
       rules: z.object({
         climbing: climbingRulesSchema.optional(),
         trickTaking: z.record(z.string(), z.unknown()).optional(),

@@ -13,6 +13,7 @@ import {
 } from '../core/engines/climbing'
 import { CardView, FactionBadge, HandBacks } from './CardView'
 import { ConfirmModal } from './ConfirmModal'
+import { DraggableHand } from './DraggableHand'
 import { HelpModal } from './HelpModal'
 import { RulesHelpPanel } from './RulesHelpPanel'
 import { BackIcon, HelpIcon, IconButton, LeaveIcon } from './IconButton'
@@ -23,6 +24,7 @@ import {
   getSeatPositionClass,
 } from './table-layout'
 import { getProfileRules } from '../content/odin-rules'
+import { sortCardsForTableDisplay, syncHandDisplayOrder } from '../core/display'
 
 const PLAY_ANIM_MS = 520
 const AI_TURN_DELAY_MS = 720
@@ -93,6 +95,7 @@ export function GameBoard({
   const [helpOpen, setHelpOpen] = useState(false)
   const [leaveOpen, setLeaveOpen] = useState(false)
   const [animating, setAnimating] = useState(false)
+  const [handOrder, setHandOrder] = useState<string[]>([])
   const logRef = useRef<HTMLUListElement>(null)
   const prevLogLen = useRef(0)
 
@@ -104,6 +107,19 @@ export function GameBoard({
   const localSeatConfig = getSeatConfig(session, LOCAL_PLAYER_SEAT)
 
   const localPlayer = state ? getLocalPlayer(state, LOCAL_PLAYER_SEAT) : null
+
+  useEffect(() => {
+    if (!localPlayer) {
+      setHandOrder([])
+      return
+    }
+    setHandOrder((prev) => syncHandDisplayOrder(localPlayer.hand, prev))
+  }, [localPlayer])
+
+  const tableCardsDisplay = useMemo(
+    () => (state?.table ? sortCardsForTableDisplay(state.table.cards, profile) : []),
+    [state?.table?.cards, profile],
+  )
   const validPlays = useMemo(
     () => (state && localPlayer ? getValidPlays(state, localPlayer.hand) : []),
     [state, localPlayer],
@@ -294,7 +310,7 @@ export function GameBoard({
                       key={`table-${state.log.length}`}
                       className="card-row centered-row table-cards-animated"
                     >
-                      {state.table.cards.map((card, index) => (
+                      {tableCardsDisplay.map((card, index) => (
                         <CardView
                           key={card.id}
                           card={card}
@@ -346,24 +362,27 @@ export function GameBoard({
             </span>
           </div>
 
-          <div className={`card-row centered-row local-hand ${animating ? 'hand-animating' : ''}`}>
-            {matchStarted && localPlayer
-              ? localPlayer.hand.map((card) => (
-                  <CardView
-                    key={card.id}
-                    card={card}
-                    selected={selected.includes(card.id)}
-                    disabled={!isHumanTurn}
-                    onClick={() => toggleCard(card.id)}
-                  />
-                ))
-              : (
-                  <HandBacks
-                    count={profile.spec.deal.cardsPerPlayer}
-                    faction={localSeatConfig.faction}
-                    small={false}
-                  />
-                )}
+          <div className={`local-hand ${animating ? 'hand-animating' : ''}`}>
+            {matchStarted && localPlayer ? (
+              <>
+                <DraggableHand
+                  className="centered-row"
+                  cards={localPlayer.hand}
+                  order={handOrder}
+                  onOrderChange={setHandOrder}
+                  selected={selected}
+                  onToggleSelect={toggleCard}
+                  selectDisabled={!isHumanTurn}
+                />
+                <p className="hint local-hand-hint">Drag cards to reorder your hand.</p>
+              </>
+            ) : (
+              <HandBacks
+                count={profile.spec.deal.cardsPerPlayer}
+                faction={localSeatConfig.faction}
+                small={false}
+              />
+            )}
           </div>
 
           {matchStarted && state && state.phase !== 'finished' && (
