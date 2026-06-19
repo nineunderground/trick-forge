@@ -1,32 +1,19 @@
 import { useRef, useState } from 'react'
 import type { LoadedProfile } from '../core/profile/loader'
-import {
-  loadBuiltinProfile,
-  loadProfileFromFile,
-  loadProfileFromUrl,
-} from '../core/profile/loader'
+import { loadProfileFromFile, loadProfileFromUrl } from '../core/profile/loader'
+
+const DEFAULT_ODIN_PROFILE_URL =
+  'https://nineunderground.github.io/trick-forge/profiles/odin.yaml'
 
 interface ProfilePickerProps {
   onLoaded: (loaded: LoadedProfile) => void
 }
 
 export function ProfilePicker({ onLoaded }: ProfilePickerProps) {
-  const [url, setUrl] = useState('')
+  const [url, setUrl] = useState(DEFAULT_ODIN_PROFILE_URL)
   const [errors, setErrors] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
-
-  async function handleBuiltin(id: string) {
-    setLoading(true)
-    setErrors([])
-    const result = await loadBuiltinProfile(id)
-    setLoading(false)
-    if ('errors' in result) {
-      setErrors(result.errors)
-      return
-    }
-    onLoaded(result)
-  }
 
   async function handleFile(file: File | undefined) {
     if (!file) return
@@ -58,14 +45,12 @@ export function ProfilePicker({ onLoaded }: ProfilePickerProps) {
     <div className="profile-picker">
       <h2>Load game profile</h2>
       <p>
-        Profiles define game rules in YAML. Use the bundled one, upload your own,
-        or load one from an external URL.
+        Profiles define game rules in YAML. Upload your own or load one from a URL.
+        Default:{' '}
+        <code>{DEFAULT_ODIN_PROFILE_URL}</code>
       </p>
 
       <div className="picker-actions">
-        <button type="button" disabled={loading} onClick={() => handleBuiltin('odin')}>
-          Odin (bundled)
-        </button>
         <button
           type="button"
           disabled={loading}
@@ -85,7 +70,7 @@ export function ProfilePicker({ onLoaded }: ProfilePickerProps) {
       <div className="url-load">
         <input
           type="url"
-          placeholder="https://example.com/my-game.yaml"
+          placeholder={DEFAULT_ODIN_PROFILE_URL}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
