@@ -16,7 +16,18 @@ export interface PlayerState {
   passed: boolean
 }
 
-export type GamePhase = 'setup' | 'playing' | 'hand-scoring' | 'finished'
+export type GamePhase =
+  | 'setup'
+  | 'playing'
+  | 'round-summary'
+  | 'hand-summary'
+  | 'hand-scoring'
+  | 'finished'
+
+export interface HandScoreDelta {
+  playerId: string
+  delta: number
+}
 
 export interface TableSet {
   cards: Card[]
@@ -36,6 +47,9 @@ export interface ClimbingGameState {
   allowHandBombOnOpen: boolean
   /** Cards removed from play (rest of beaten sets, cleared table, etc.). */
   discard: Card[]
+  handNumber: number
+  roundNumber: number
+  lastHandDeltas: HandScoreDelta[]
   log: string[]
 }
 
@@ -51,7 +65,12 @@ export interface PassAction {
   type: 'pass'
 }
 
-export type PlayerAction = PlayAction | PassAction
+export type PlayerAction = PlayAction | PassAction | ContinueAction
+
+export interface ContinueAction {
+  type: 'continue'
+  step: 'round' | 'hand'
+}
 
 export interface ValidPlay {
   cardIds: string[]

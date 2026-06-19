@@ -2,6 +2,8 @@ import type { GameProfile } from './profile/schema'
 import {
   applyAction,
   chooseRandomAiAction,
+  continueAfterHandSummary,
+  continueAfterRoundSummary,
   initClimbingGame,
   shouldAutoPlay,
 } from './engines/climbing'
@@ -46,6 +48,17 @@ export function dispatchHumanAction(
   action: PlayerAction,
 ): ClimbingGameState {
   return applyAction(state, profile, action)
+}
+
+export function dispatchContinueRound(state: ClimbingGameState): ClimbingGameState {
+  return continueAfterRoundSummary(state)
+}
+
+export function dispatchContinueHand(
+  state: ClimbingGameState,
+  profile: GameProfile,
+): ClimbingGameState {
+  return continueAfterHandSummary(state, profile)
 }
 
 export function needsAiTurn(state: ClimbingGameState): boolean {

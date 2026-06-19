@@ -5,6 +5,8 @@ import { ProfilePicker } from './components/ProfilePicker'
 import { SessionSetup } from './components/SessionSetup'
 import {
   createGame,
+  dispatchContinueHand,
+  dispatchContinueRound,
   dispatchHumanAction,
   runSingleAiTurn,
 } from './core/game-session'
@@ -55,6 +57,16 @@ function App() {
   function handleAiStep() {
     if (!loaded || !gameState) return
     setGameState(runSingleAiTurn(gameState, loaded.profile))
+  }
+
+  function handleContinueRound() {
+    if (!gameState) return
+    setGameState(dispatchContinueRound(gameState))
+  }
+
+  function handleContinueHand() {
+    if (!loaded || !gameState) return
+    setGameState(dispatchContinueHand(gameState, loaded.profile))
   }
 
   function resetToLobby() {
@@ -112,6 +124,8 @@ function App() {
             onPlayAgain={playAgain}
             onAction={handleAction}
             onAiStep={handleAiStep}
+            onContinueRound={handleContinueRound}
+            onContinueHand={handleContinueHand}
             onBackToSetup={backToSetup}
             onLeave={resetToLobby}
           />

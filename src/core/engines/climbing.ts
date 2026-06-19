@@ -76,6 +76,9 @@ export function initClimbingGame(
     table: null,
     allowHandBombOnOpen: false,
     discard: [],
+    handNumber: 1,
+    roundNumber: 1,
+    lastHandDeltas: [],
     log: [`New hand. ${players[starter].name} leads the first round.`],
   }
 }
@@ -164,6 +167,12 @@ export function applyAction(
   profile: GameProfile,
   action: PlayerAction,
 ): ClimbingGameState {
+  if (action.type === 'continue') {
+    if (action.step === 'round') return continueAfterRoundSummary(state)
+    if (action.step === 'hand') return continueAfterHandSummary(state, profile)
+    throw new Error('Unknown continue step')
+  }
+
   const next: ClimbingGameState = structuredClone(state)
   const player = next.players[next.currentPlayerIndex]
 
@@ -248,9 +257,20 @@ function resolveAllPass(state: ClimbingGameState): ClimbingGameState {
     const leader = next.players[leaderIndex]
     next.allowHandBombOnOpen = true
     next.currentPlayerIndex = leaderIndex
+    next.phase = 'round-summary'
     next.log.push(`${leader.name} starts the new round.`)
   }
 
+  return next
+}
+
+export function continueAfterRoundSummary(state: ClimbingGameState): ClimbingGameState {
+  if (state.phase !== 'round-summary') {
+    throw new Error('Not waiting for round summary')
+  }
+  const next = structuredClone(state)
+  next.phase = 'playing'
+  next.roundNumber += 1
   return next
 }
 
@@ -262,11 +282,13 @@ function endHand(state: ClimbingGameState, profile: GameProfile): ClimbingGameSt
   next.table = null
   next.allowHandBombOnOpen = false
   const perCard = profile.spec.scoring.pointsPerRemainingCard
+  next.lastHandDeltas = []
 
   for (const player of next.players) {
     const penalty = player.hand.length * perCard
-    player.score += penalty
     if (penalty > 0) {
+      next.lastHandDeltas.push({ playerId: player.id, delta: penalty })
+      player.score += penalty
       next.log.push(`${player.name} +${penalty} pts (${player.hand.length} cards).`)
     }
   }
@@ -287,7 +309,23 @@ function endHand(state: ClimbingGameState, profile: GameProfile): ClimbingGameSt
     return next
   }
 
-  next.log.push('Hand over. Dealing...')
+  next.phase = 'hand-summary'
+  next.log.push('Hand over.')
+  return next
+}
+
+export function continueAfterHandSummary(
+  state: ClimbingGameState,
+  profile: GameProfile,
+): ClimbingGameState {
+  if (state.phase !== 'hand-summary') {
+    throw new Error('Not waiting for hand summary')
+  }
+  const next = structuredClone(state)
+  next.handNumber += 1
+  next.roundNumber = 1
+  next.lastHandDeltas = []
+  next.log.push('Dealing next hand...')
   return dealNextHand(next, profile)
 }
 

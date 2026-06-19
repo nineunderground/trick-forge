@@ -18,6 +18,7 @@ import { DiscardPile } from './DiscardPile'
 import { DraggableHand } from './DraggableHand'
 import { HelpModal } from './HelpModal'
 import { RulesHelpPanel } from './RulesHelpPanel'
+import { GameScoreboard, ScoreSummaryModal } from './ScoreSummaryModal'
 import { BackIcon, HelpIcon, IconButton, LeaveIcon } from './IconButton'
 import {
   animationOriginForPosition,
@@ -40,6 +41,8 @@ interface GameBoardProps {
   onPlayAgain: () => void
   onAction: (action: PlayAction | { type: 'pass' }) => void
   onAiStep: () => void
+  onContinueRound: () => void
+  onContinueHand: () => void
   onBackToSetup: () => void
   onLeave: () => void
 }
@@ -89,6 +92,8 @@ export function GameBoard({
   onPlayAgain,
   onAction,
   onAiStep,
+  onContinueRound,
+  onContinueHand,
   onBackToSetup,
   onLeave,
 }: GameBoardProps) {
@@ -96,6 +101,7 @@ export function GameBoard({
   const [takeCardId, setTakeCardId] = useState<string | null>(null)
   const [helpOpen, setHelpOpen] = useState(false)
   const [leaveOpen, setLeaveOpen] = useState(false)
+  const [backOpen, setBackOpen] = useState(false)
   const [animating, setAnimating] = useState(false)
   const [handOrder, setHandOrder] = useState<string[]>([])
   const logRef = useRef<HTMLUListElement>(null)
@@ -145,7 +151,11 @@ export function GameBoard({
   }))
 
   const logEntries = useMemo(() => (state ? [...state.log].reverse() : []), [state?.log])
-  const handStarter = state ? state.players[state.handStarterIndex] : null
+
+  const handScoreDeltas = useMemo(() => {
+    if (!state?.lastHandDeltas.length) return undefined
+    return new Map(state.lastHandDeltas.map((entry) => [entry.playerId, entry.delta]))
+  }, [state?.lastHandDeltas])
 
   const matchingPlay = validPlays.find(
     (play) =>
@@ -160,6 +170,20 @@ export function GameBoard({
       localPlayer &&
       mustTakeFromTable(state, localPlayer.hand.length, matchingPlay.cardIds.length),
   )
+
+  const actionHintMessage = useMemo(() => {
+    if (!isHumanTurn || !state || state.phase !== 'playing') return ''
+    if (selected.length > 0 && !matchingPlay) {
+      const countHint = state.table
+        ? ` ${state.table.cards.length} or ${state.table.cards.length + 1}`
+        : ''
+      return `Cards must share the same colour or number, beat the table, and use${countHint} cards.`
+    }
+    if (matchingPlay && mustTake && state.table!.cards.length > 1 && !takeCardId) {
+      return 'Click a table card to take into your hand.'
+    }
+    return ''
+  }, [isHumanTurn, state, selected.length, matchingPlay, mustTake, takeCardId])
 
   useEffect(() => {
     if (!state?.table || !matchingPlay || !isHumanTurn || !localPlayer) {
@@ -247,14 +271,15 @@ export function GameBoard({
   return (
     <div className="game-board">
       <header className="game-top-bar">
-        <div className="game-title-block">
-          <h2>{profile.metadata.name}</h2>
-          {handStarter && matchStarted && (
-            <p className="game-hand-leader">
-              First player this hand: <strong>{handStarter.name}</strong>
-            </p>
-          )}
-        </div>
+        <h2 className="game-top-title">{profile.metadata.name}</h2>
+        {matchStarted && state && (
+          <GameScoreboard
+            handNumber={state.handNumber}
+            roundNumber={state.roundNumber}
+            players={state.players}
+            targetScore={profile.spec.scoring.gameEndThreshold}
+          />
+        )}
       </header>
 
       <HelpModal
@@ -280,6 +305,37 @@ export function GameBoard({
           onLeave()
         }}
         onCancel={() => setLeaveOpen(false)}
+      />
+
+      <ConfirmModal
+        open={backOpen}
+        title="Back to setup?"
+        message="You will leave the current match and lose all progress in this game."
+        confirmLabel="Back to setup"
+        onConfirm={() => {
+          setBackOpen(false)
+          onBackToSetup()
+        }}
+        onCancel={() => setBackOpen(false)}
+      />
+
+      <ScoreSummaryModal
+        open={Boolean(state && state.phase === 'round-summary')}
+        title={`Round ${state?.roundNumber ?? 0} complete`}
+        subtitle="Scores so far — next round starts when you continue."
+        players={state?.players ?? []}
+        continueLabel="Next round"
+        onContinue={onContinueRound}
+      />
+
+      <ScoreSummaryModal
+        open={Boolean(state && state.phase === 'hand-summary')}
+        title={`Hand ${state?.handNumber ?? 0} complete`}
+        subtitle="Points added for cards left in hand."
+        players={state?.players ?? []}
+        deltas={handScoreDeltas}
+        continueLabel="Next hand"
+        onContinue={onContinueHand}
       />
 
       <div className="table-arena">
@@ -416,32 +472,27 @@ export function GameBoard({
             )}
           </div>
 
-          {matchStarted && state && state.phase !== 'finished' && (
+          {matchStarted && state && state.phase === 'playing' && (
             <section className="actions centered-row">
-              {isHumanTurn && selected.length > 0 && !matchingPlay && (
-                <p className="hint action-hint">
-                  Cards must share the same colour or the same number, beat the table, and use
-                  {state.table ? ` ${state.table.cards.length} or ${state.table.cards.length + 1}` : ''}{' '}
-                  cards.
-                </p>
-              )}
-              {isHumanTurn && matchingPlay && mustTake && state.table!.cards.length > 1 && !takeCardId && (
-                <p className="hint action-hint">Click a table card to take into your hand.</p>
-              )}
-              <button
-                type="button"
-                disabled={!isHumanTurn || !matchingPlay || (mustTake && !takeCardId)}
-                onClick={submitPlay}
-              >
-                Play selection
-              </button>
-              <button
-                type="button"
-                disabled={!isHumanTurn || !canPass(state)}
-                onClick={submitPass}
-              >
-                Pass
-              </button>
+              <p className="hint action-hint" aria-live="polite">
+                {actionHintMessage || '\u00A0'}
+              </p>
+              <div className="action-buttons">
+                <button
+                  type="button"
+                  disabled={!isHumanTurn || !matchingPlay || (mustTake && !takeCardId)}
+                  onClick={submitPlay}
+                >
+                  Play selection
+                </button>
+                <button
+                  type="button"
+                  disabled={!isHumanTurn || !canPass(state)}
+                  onClick={submitPass}
+                >
+                  Pass
+                </button>
+              </div>
             </section>
           )}
         </section>
@@ -452,7 +503,7 @@ export function GameBoard({
           <IconButton label="Help" onClick={() => setHelpOpen(true)}>
             <HelpIcon />
           </IconButton>
-          <IconButton label="Back to setup" onClick={onBackToSetup}>
+          <IconButton label="Back to setup" onClick={() => setBackOpen(true)}>
             <BackIcon />
           </IconButton>
           <IconButton label="Leave game" onClick={() => setLeaveOpen(true)}>
