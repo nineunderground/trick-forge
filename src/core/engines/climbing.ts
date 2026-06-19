@@ -7,6 +7,8 @@ import {
   shuffle,
 } from '../cards'
 import type { GameProfile } from '../profile/schema'
+import type { SeatConfig } from '../session/types'
+import { seatDisplayName } from '../session/setup'
 import type {
   Card,
   ClimbingGameState,
@@ -23,14 +25,13 @@ function handIsBomb(hand: Card[]): boolean {
   return sameSuit || sameRank
 }
 
-export function createPlayers(
-  count: number,
-  humanIndex = 0,
-): PlayerState[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `p${i}`,
-    name: i === humanIndex ? 'You' : `AI ${i}`,
-    kind: i === humanIndex ? 'human' : 'ai',
+export function createPlayersFromSeats(seats: SeatConfig[]): PlayerState[] {
+  return seats.map((seat) => ({
+    id: `p${seat.seatIndex}`,
+    seatIndex: seat.seatIndex,
+    name: seatDisplayName(seat),
+    kind: seat.kind,
+    isHost: seat.isHost,
     hand: [],
     score: 0,
     passed: false,
@@ -39,10 +40,9 @@ export function createPlayers(
 
 export function initClimbingGame(
   profile: GameProfile,
-  playerCount: number,
-  humanIndex = 0,
+  seats: SeatConfig[],
 ): ClimbingGameState {
-  const players = createPlayers(playerCount, humanIndex)
+  const players = createPlayersFromSeats(seats)
   let deck = shuffle(
     createDeck(
       profile.spec.deck.suits,
@@ -315,21 +315,40 @@ export function chooseRandomAiAction(state: ClimbingGameState): PlayerAction {
   return action
 }
 
+export function isLocallyControlledHuman(
+  state: ClimbingGameState,
+  localSeatIndex: number,
+): boolean {
+  const player = state.players[state.currentPlayerIndex]
+  return (
+    player.kind === 'human' &&
+    player.seatIndex === localSeatIndex &&
+    state.phase === 'playing'
+  )
+}
+
+export function shouldAutoPlay(state: ClimbingGameState, localSeatIndex: number): boolean {
+  if (state.phase !== 'playing') return false
+  const player = state.players[state.currentPlayerIndex]
+  if (player.kind === 'ai') return true
+  return player.kind === 'human' && player.seatIndex !== localSeatIndex
+}
+
 export function runAiTurnsWhileNeeded(
   state: ClimbingGameState,
   profile: GameProfile,
+  localSeatIndex: number,
 ): ClimbingGameState {
   let next = state
-  while (
-    next.phase === 'playing' &&
-    next.players[next.currentPlayerIndex].kind === 'ai'
-  ) {
+  while (shouldAutoPlay(next, localSeatIndex)) {
     const action = chooseRandomAiAction(next)
     next = applyAction(next, profile, action)
   }
   return next
 }
 
-export function getHumanPlayerIndex(state: ClimbingGameState): number {
-  return state.players.findIndex((p) => p.kind === 'human')
+export function getLocalPlayer(state: ClimbingGameState, localSeatIndex: number): PlayerState {
+  const player = state.players.find((p) => p.seatIndex === localSeatIndex)
+  if (!player) throw new Error(`Local seat ${localSeatIndex} not found`)
+  return player
 }

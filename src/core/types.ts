@@ -6,8 +6,10 @@ export interface Card {
 
 export interface PlayerState {
   id: string
+  seatIndex: number
   name: string
   kind: 'human' | 'ai'
+  isHost: boolean
   hand: Card[]
   score: number
   passed: boolean

@@ -4,25 +4,26 @@ import {
   initClimbingGame,
   runAiTurnsWhileNeeded,
 } from './engines/climbing'
+import type { SessionSetup } from './session/types'
+import { LOCAL_PLAYER_SEAT } from './session/types'
+import { validateSessionSetup } from './session/setup'
 import type { ClimbingGameState, PlayerAction } from './types'
 
 export function createGame(
   profile: GameProfile,
-  playerCount?: number,
-  humanIndex = 0,
+  session: SessionSetup,
 ): ClimbingGameState {
-  const count = playerCount ?? profile.spec.players.default
-  const clamped = Math.min(
-    profile.spec.players.max,
-    Math.max(profile.spec.players.min, count),
-  )
-
   if (profile.spec.family !== 'climbing') {
     throw new Error(`Unsupported family: ${profile.spec.family}`)
   }
 
-  const state = initClimbingGame(profile, clamped, humanIndex)
-  return runAiTurnsWhileNeeded(state, profile)
+  const errors = validateSessionSetup(profile, session)
+  if (errors.length > 0) {
+    throw new Error(errors.join(' '))
+  }
+
+  const state = initClimbingGame(profile, session.seats)
+  return runAiTurnsWhileNeeded(state, profile, LOCAL_PLAYER_SEAT)
 }
 
 export function dispatchHumanAction(
@@ -31,5 +32,5 @@ export function dispatchHumanAction(
   action: PlayerAction,
 ): ClimbingGameState {
   const afterHuman = applyAction(state, profile, action)
-  return runAiTurnsWhileNeeded(afterHuman, profile)
+  return runAiTurnsWhileNeeded(afterHuman, profile, LOCAL_PLAYER_SEAT)
 }

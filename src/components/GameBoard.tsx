@@ -3,9 +3,11 @@ import type { GameProfile } from '../core/profile/schema'
 import type { ClimbingGameState, PlayAction } from '../core/types'
 import {
   canPass,
-  getHumanPlayerIndex,
+  getLocalPlayer,
   getValidPlays,
+  isLocallyControlledHuman,
 } from '../core/engines/climbing'
+import { LOCAL_PLAYER_SEAT } from '../core/session/types'
 import { CardView } from './CardView'
 
 interface GameBoardProps {
@@ -15,18 +17,16 @@ interface GameBoardProps {
 }
 
 export function GameBoard({ profile, state, onAction }: GameBoardProps) {
-  const humanIndex = getHumanPlayerIndex(state)
-  const human = state.players[humanIndex]
+  const localPlayer = getLocalPlayer(state, LOCAL_PLAYER_SEAT)
   const [selected, setSelected] = useState<string[]>([])
   const [takeCardId, setTakeCardId] = useState<string | null>(null)
 
   const validPlays = useMemo(
-    () => getValidPlays(state, human.hand),
-    [state, human.hand],
+    () => getValidPlays(state, localPlayer.hand),
+    [state, localPlayer.hand],
   )
 
-  const isHumanTurn =
-    state.phase === 'playing' && state.currentPlayerIndex === humanIndex
+  const isHumanTurn = isLocallyControlledHuman(state, LOCAL_PLAYER_SEAT)
 
   const matchingPlay = validPlays.find(
     (play) =>
@@ -63,12 +63,16 @@ export function GameBoard({ profile, state, onAction }: GameBoardProps) {
       </header>
 
       <section className="scoreboard">
-        {state.players.map((player) => (
+        {state.players.map((player, index) => (
           <div
             key={player.id}
-            className={`score-row ${state.currentPlayerIndex === state.players.indexOf(player) && state.phase === 'playing' ? 'active' : ''}`}
+            className={`score-row ${state.currentPlayerIndex === index && state.phase === 'playing' ? 'active' : ''}`}
           >
-            <span>{player.name}</span>
+            <span>
+              {player.name}
+              {player.kind === 'human' && !player.isHost ? ' · remote' : ''}
+            </span>
+            <span>{player.kind === 'ai' ? 'AI' : 'Human'}</span>
             <span>{player.score} pts</span>
             <span>{player.hand.length} cards</span>
           </div>
@@ -99,7 +103,7 @@ export function GameBoard({ profile, state, onAction }: GameBoardProps) {
       <section className="hand-area">
         <h3>Your hand {isHumanTurn ? '(your turn)' : ''}</h3>
         <div className="card-row">
-          {human.hand.map((card) => (
+          {localPlayer.hand.map((card) => (
             <CardView
               key={card.id}
               card={card}

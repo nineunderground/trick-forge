@@ -41,6 +41,7 @@ body {
 }
 
 .profile-picker,
+.panel,
 .setup,
 .game-board {
   background: rgba(255, 255, 255, 0.06);
@@ -118,7 +119,7 @@ label {
 
 .score-row {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1.4fr auto auto auto;
   gap: 1rem;
   padding: 0.35rem 0.5rem;
   border-radius: 6px;
@@ -212,4 +213,87 @@ footer {
 
 a {
   color: #a5b4fc;
+}
+
+.lobby-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.setup-step {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.setup-step:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.seat-table {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.seat-row {
+  display: grid;
+  grid-template-columns: 3rem 1fr 1.6fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.seat-header {
+  background: transparent;
+  opacity: 0.7;
+  font-size: 0.85rem;
+}
+
+.seat-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+label.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0;
+}
+
+.inline-hint {
+  font-size: 0.8rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.25);
+  font-size: 0.85rem;
+}
+
+.warning {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: rgba(251, 191, 36, 0.15);
+  color: #fde68a;
+}
+
+.back-link,
+.reset {
+  margin-top: 1rem;
+}
+
+.back-link + .reset {
+  margin-left: 0.75rem;
 }

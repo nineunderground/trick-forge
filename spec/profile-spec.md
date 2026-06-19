@@ -25,10 +25,37 @@ spec:
   deal:
     cardsPerPlayer: 9
   scoring: { ... }
+  session:
+    setupSteps:
+      - id: playerCount
+        type: playerCount
+      - id: seats
+        type: seatAssignment
+        hostSeat: 0
+        allowRemoteHumans: false
   rules:
     climbing: { ... }    # when family = climbing
     trickTaking: { ... } # reserved for future profiles
 ```
+
+## Session setup steps
+
+Every game profile should declare the same pre-game flow via `spec.session.setupSteps`.
+The UI renders these steps in order before the engine starts.
+
+| Step type          | Purpose                                              |
+|--------------------|------------------------------------------------------|
+| `playerCount`      | Choose how many players join the session               |
+| `seatAssignment`   | Assign each seat to Human or AI; one seat is the host |
+
+### `seatAssignment` options
+
+| Field               | Default | Description                                           |
+|---------------------|---------|-------------------------------------------------------|
+| `hostSeat`          | `0`     | Seat index controlled by the player who creates the game |
+| `allowRemoteHumans` | `false` | When false, only the host can be Human locally; other Human seats require Join game |
+
+If `setupSteps` is omitted, the client uses the default steps above.
 
 ## Supported families
 

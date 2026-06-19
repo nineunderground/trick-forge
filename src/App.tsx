@@ -1,30 +1,46 @@
 import { useState } from 'react'
 import { GameBoard } from './components/GameBoard'
+import { Lobby } from './components/Lobby'
 import { ProfilePicker } from './components/ProfilePicker'
+import { SessionSetup } from './components/SessionSetup'
 import { createGame, dispatchHumanAction } from './core/game-session'
 import type { LoadedProfile } from './core/profile/loader'
+import { createDefaultSessionSetup } from './core/session/setup'
+import type { SessionSetup as SessionSetupState } from './core/session/types'
 import type { ClimbingGameState } from './core/types'
 import './App.css'
 
-function App() {
-  const [loaded, setLoaded] = useState<LoadedProfile | null>(null)
-  const [gameState, setGameState] = useState<ClimbingGameState | null>(null)
-  const [playerCount, setPlayerCount] = useState<number | null>(null)
+type AppScreen = 'lobby' | 'profile' | 'setup' | 'game'
 
-  function startGame(profile: LoadedProfile['profile'], count: number) {
-    setGameState(createGame(profile, count))
-    setPlayerCount(count)
-  }
+function App() {
+  const [screen, setScreen] = useState<AppScreen>('lobby')
+  const [loaded, setLoaded] = useState<LoadedProfile | null>(null)
+  const [sessionSetup, setSessionSetup] = useState<SessionSetupState | null>(null)
+  const [gameState, setGameState] = useState<ClimbingGameState | null>(null)
 
   function handleProfileLoaded(next: LoadedProfile) {
     setLoaded(next)
-    setPlayerCount(next.profile.spec.players.default)
+    setSessionSetup(createDefaultSessionSetup(next.profile))
     setGameState(null)
+    setScreen('setup')
+  }
+
+  function startGame() {
+    if (!loaded || !sessionSetup) return
+    setGameState(createGame(loaded.profile, sessionSetup))
+    setScreen('game')
   }
 
   function handleAction(action: Parameters<typeof dispatchHumanAction>[2]) {
     if (!loaded || !gameState) return
     setGameState(dispatchHumanAction(gameState, loaded.profile, action))
+  }
+
+  function resetToLobby() {
+    setScreen('lobby')
+    setLoaded(null)
+    setSessionSetup(null)
+    setGameState(null)
   }
 
   return (
@@ -34,46 +50,46 @@ function App() {
         <p>Browser card engine · YAML profiles · humans and AIs</p>
       </header>
 
-      {!loaded ? (
-        <ProfilePicker onLoaded={handleProfileLoaded} />
-      ) : !gameState ? (
-        <section className="setup">
-          <h2>{loaded.profile.metadata.name}</h2>
-          <p>Source: {loaded.sourceLabel}</p>
-          <p>Family: {loaded.profile.spec.family}</p>
-          <label>
-            Players ({loaded.profile.spec.players.min}–{loaded.profile.spec.players.max})
-            <input
-              type="number"
-              min={loaded.profile.spec.players.min}
-              max={loaded.profile.spec.players.max}
-              value={playerCount ?? loaded.profile.spec.players.default}
-              onChange={(e) => setPlayerCount(Number(e.target.value))}
-            />
-          </label>
-          <div className="setup-actions">
-            <button
-              type="button"
-              onClick={() =>
-                startGame(loaded.profile, playerCount ?? loaded.profile.spec.players.default)
-              }
-            >
-              Start game
-            </button>
-            <button type="button" className="secondary" onClick={() => setLoaded(null)}>
-              Change profile
-            </button>
-          </div>
-        </section>
-      ) : (
+      {screen === 'lobby' && <Lobby onCreateGame={() => setScreen('profile')} />}
+
+      {screen === 'profile' && (
+        <>
+          <ProfilePicker onLoaded={handleProfileLoaded} />
+          <button type="button" className="secondary back-link" onClick={() => setScreen('lobby')}>
+            Back to lobby
+          </button>
+        </>
+      )}
+
+      {screen === 'setup' && loaded && sessionSetup && (
+        <SessionSetup
+          profile={loaded.profile}
+          setup={sessionSetup}
+          onChange={setSessionSetup}
+          onStart={startGame}
+          onBack={() => setScreen('profile')}
+        />
+      )}
+
+      {screen === 'game' && loaded && gameState && (
         <>
           <GameBoard
             profile={loaded.profile}
             state={gameState}
             onAction={handleAction}
           />
-          <button type="button" className="secondary reset" onClick={() => setGameState(null)}>
-            New game
+          <button
+            type="button"
+            className="secondary reset"
+            onClick={() => {
+              setGameState(null)
+              setScreen('setup')
+            }}
+          >
+            Back to setup
+          </button>
+          <button type="button" className="secondary reset" onClick={resetToLobby}>
+            Leave game
           </button>
         </>
       )}

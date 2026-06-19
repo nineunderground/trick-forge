@@ -23,6 +23,17 @@ const scoringSchema = z.object({
   winner: z.enum(['lowest', 'highest']),
 })
 
+const setupStepSchema = z.object({
+  id: z.string().min(1),
+  type: z.enum(['playerCount', 'seatAssignment']),
+  hostSeat: z.number().int().min(0).optional(),
+  allowRemoteHumans: z.boolean().optional(),
+})
+
+const sessionSchema = z.object({
+  setupSteps: z.array(setupStepSchema).min(1),
+})
+
 const climbingRulesSchema = z.object({
   openingPlay: z.literal('single_card'),
   beatConstraint: z.object({
@@ -67,6 +78,7 @@ export const gameProfileSchema = z
       deck: deckSchema,
       deal: dealSchema,
       scoring: scoringSchema,
+      session: sessionSchema.optional(),
       rules: z.object({
         climbing: climbingRulesSchema.optional(),
         trickTaking: z.record(z.string(), z.unknown()).optional(),

@@ -35,6 +35,14 @@ spec:
     pointsPerRemainingCard: 1
     gameEndThreshold: 15
     winner: lowest
+  session:
+    setupSteps:
+      - id: playerCount
+        type: playerCount
+      - id: seats
+        type: seatAssignment
+        hostSeat: 0
+        allowRemoteHumans: false
   rules:
     climbing:
       openingPlay: single_card
