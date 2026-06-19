@@ -20,7 +20,6 @@ export type GamePhase =
   | 'setup'
   | 'playing'
   | 'round-summary'
-  | 'hand-summary'
   | 'hand-scoring'
   | 'finished'
 
@@ -47,7 +46,7 @@ export interface ClimbingGameState {
   allowHandBombOnOpen: boolean
   /** Cards removed from play (rest of beaten sets, cleared table, etc.). */
   discard: Card[]
-  handNumber: number
+  /** Scoring round number (each round ends when a player empties their hand). */
   roundNumber: number
   lastHandDeltas: HandScoreDelta[]
   log: string[]
@@ -69,7 +68,7 @@ export type PlayerAction = PlayAction | PassAction | ContinueAction
 
 export interface ContinueAction {
   type: 'continue'
-  step: 'round' | 'hand'
+  step: 'round'
 }
 
 export interface ValidPlay {

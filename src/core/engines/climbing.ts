@@ -76,7 +76,6 @@ export function initClimbingGame(
     table: null,
     allowHandBombOnOpen: false,
     discard: [],
-    handNumber: 1,
     roundNumber: 1,
     lastHandDeltas: [],
     log: [`New hand. ${players[starter].name} leads the first round.`],
@@ -168,8 +167,7 @@ export function applyAction(
   action: PlayerAction,
 ): ClimbingGameState {
   if (action.type === 'continue') {
-    if (action.step === 'round') return continueAfterRoundSummary(state)
-    if (action.step === 'hand') return continueAfterHandSummary(state, profile)
+    if (action.step === 'round') return continueAfterRoundSummary(state, profile)
     throw new Error('Unknown continue step')
   }
 
@@ -257,20 +255,9 @@ function resolveAllPass(state: ClimbingGameState): ClimbingGameState {
     const leader = next.players[leaderIndex]
     next.allowHandBombOnOpen = true
     next.currentPlayerIndex = leaderIndex
-    next.phase = 'round-summary'
     next.log.push(`${leader.name} starts the new round.`)
   }
 
-  return next
-}
-
-export function continueAfterRoundSummary(state: ClimbingGameState): ClimbingGameState {
-  if (state.phase !== 'round-summary') {
-    throw new Error('Not waiting for round summary')
-  }
-  const next = structuredClone(state)
-  next.phase = 'playing'
-  next.roundNumber += 1
   return next
 }
 
@@ -309,23 +296,22 @@ function endHand(state: ClimbingGameState, profile: GameProfile): ClimbingGameSt
     return next
   }
 
-  next.phase = 'hand-summary'
-  next.log.push('Hand over.')
+  next.phase = 'round-summary'
+  next.log.push('Round over.')
   return next
 }
 
-export function continueAfterHandSummary(
+export function continueAfterRoundSummary(
   state: ClimbingGameState,
   profile: GameProfile,
 ): ClimbingGameState {
-  if (state.phase !== 'hand-summary') {
-    throw new Error('Not waiting for hand summary')
+  if (state.phase !== 'round-summary') {
+    throw new Error('Not waiting for round summary')
   }
   const next = structuredClone(state)
-  next.handNumber += 1
-  next.roundNumber = 1
+  next.roundNumber += 1
   next.lastHandDeltas = []
-  next.log.push('Dealing next hand...')
+  next.log.push('Dealing next round...')
   return dealNextHand(next, profile)
 }
 

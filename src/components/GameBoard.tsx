@@ -42,7 +42,6 @@ interface GameBoardProps {
   onAction: (action: PlayAction | { type: 'pass' }) => void
   onAiStep: () => void
   onContinueRound: () => void
-  onContinueHand: () => void
   onBackToSetup: () => void
   onLeave: () => void
 }
@@ -93,7 +92,6 @@ export function GameBoard({
   onAction,
   onAiStep,
   onContinueRound,
-  onContinueHand,
   onBackToSetup,
   onLeave,
 }: GameBoardProps) {
@@ -274,7 +272,6 @@ export function GameBoard({
         <h2 className="game-top-title">{profile.metadata.name}</h2>
         {matchStarted && state && (
           <GameScoreboard
-            handNumber={state.handNumber}
             roundNumber={state.roundNumber}
             players={state.players}
             targetScore={profile.spec.scoring.gameEndThreshold}
@@ -322,20 +319,11 @@ export function GameBoard({
       <ScoreSummaryModal
         open={Boolean(state && state.phase === 'round-summary')}
         title={`Round ${state?.roundNumber ?? 0} complete`}
-        subtitle="Scores so far — next round starts when you continue."
-        players={state?.players ?? []}
-        continueLabel="Next round"
-        onContinue={onContinueRound}
-      />
-
-      <ScoreSummaryModal
-        open={Boolean(state && state.phase === 'hand-summary')}
-        title={`Hand ${state?.handNumber ?? 0} complete`}
         subtitle="Points added for cards left in hand."
         players={state?.players ?? []}
         deltas={handScoreDeltas}
-        continueLabel="Next hand"
-        onContinue={onContinueHand}
+        continueLabel="Next round"
+        onContinue={onContinueRound}
       />
 
       <div className="table-arena">

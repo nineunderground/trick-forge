@@ -2,7 +2,6 @@ import type { GameProfile } from './profile/schema'
 import {
   applyAction,
   chooseRandomAiAction,
-  continueAfterHandSummary,
   continueAfterRoundSummary,
   initClimbingGame,
   shouldAutoPlay,
@@ -50,15 +49,11 @@ export function dispatchHumanAction(
   return applyAction(state, profile, action)
 }
 
-export function dispatchContinueRound(state: ClimbingGameState): ClimbingGameState {
-  return continueAfterRoundSummary(state)
-}
-
-export function dispatchContinueHand(
+export function dispatchContinueRound(
   state: ClimbingGameState,
   profile: GameProfile,
 ): ClimbingGameState {
-  return continueAfterHandSummary(state, profile)
+  return continueAfterRoundSummary(state, profile)
 }
 
 export function needsAiTurn(state: ClimbingGameState): boolean {

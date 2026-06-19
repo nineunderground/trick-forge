@@ -65,14 +65,12 @@ export function ScoreSummaryModal({
 }
 
 interface GameScoreboardProps {
-  handNumber: number
   roundNumber: number
   players: PlayerState[]
   targetScore?: number
 }
 
 export function GameScoreboard({
-  handNumber,
   roundNumber,
   players,
   targetScore,
@@ -80,8 +78,6 @@ export function GameScoreboard({
   return (
     <div className="game-scoreboard" aria-label="Match scoreboard">
       <div className="game-scoreboard-meta">
-        <span>Hand {handNumber}</span>
-        <span className="game-scoreboard-sep">·</span>
         <span>Round {roundNumber}</span>
         {targetScore !== undefined && (
           <>
