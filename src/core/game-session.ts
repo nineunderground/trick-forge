@@ -1,8 +1,9 @@
 import type { GameProfile } from './profile/schema'
 import {
   applyAction,
+  chooseRandomAiAction,
   initClimbingGame,
-  runAiTurnsWhileNeeded,
+  shouldAutoPlay,
 } from './engines/climbing'
 import type { SessionSetup } from './session/types'
 import { LOCAL_PLAYER_SEAT } from './session/types'
@@ -22,12 +23,21 @@ export function createGame(
     throw new Error(errors.join(' '))
   }
 
-  const state = initClimbingGame(
+  return initClimbingGame(
     profile,
     session.seats,
     resolveFirstPlayerSeat(session),
   )
-  return runAiTurnsWhileNeeded(state, profile, LOCAL_PLAYER_SEAT)
+}
+
+export function runSingleAiTurn(
+  state: ClimbingGameState,
+  profile: GameProfile,
+): ClimbingGameState {
+  if (!shouldAutoPlay(state, LOCAL_PLAYER_SEAT)) {
+    return state
+  }
+  return applyAction(state, profile, chooseRandomAiAction(state))
 }
 
 export function dispatchHumanAction(
@@ -35,6 +45,9 @@ export function dispatchHumanAction(
   profile: GameProfile,
   action: PlayerAction,
 ): ClimbingGameState {
-  const afterHuman = applyAction(state, profile, action)
-  return runAiTurnsWhileNeeded(afterHuman, profile, LOCAL_PLAYER_SEAT)
+  return applyAction(state, profile, action)
+}
+
+export function needsAiTurn(state: ClimbingGameState): boolean {
+  return shouldAutoPlay(state, LOCAL_PLAYER_SEAT)
 }

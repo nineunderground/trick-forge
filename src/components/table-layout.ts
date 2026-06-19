@@ -30,3 +30,24 @@ export function getOpponents(
 ): PlayerState[] {
   return players.filter((p) => p.seatIndex !== localSeat)
 }
+
+export function animationOriginForPosition(position: string): Record<string, string> {
+  switch (position) {
+    case 'top':
+      return { '--from-x': '0px', '--from-y': '-56px' }
+    case 'left':
+      return { '--from-x': '-80px', '--from-y': '0px' }
+    case 'right':
+      return { '--from-x': '80px', '--from-y': '0px' }
+    case 'top-left':
+      return { '--from-x': '-56px', '--from-y': '-48px' }
+    case 'top-right':
+      return { '--from-x': '56px', '--from-y': '-48px' }
+    case 'bottom-left':
+      return { '--from-x': '-56px', '--from-y': '48px' }
+    case 'bottom-right':
+      return { '--from-x': '56px', '--from-y': '48px' }
+    default:
+      return { '--from-x': '0px', '--from-y': '56px' }
+  }
+}

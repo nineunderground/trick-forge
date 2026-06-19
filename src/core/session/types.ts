@@ -6,6 +6,7 @@ export interface SeatConfig {
   seatIndex: number
   kind: SeatKind
   isHost: boolean
+  faction: string
 }
 
 export interface SessionSetup {

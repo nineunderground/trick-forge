@@ -7,6 +7,7 @@ import {
   seatLabelForSetup,
   updateSeatKind,
   validateSessionSetup,
+  updateSeatFaction,
   type SetupStepDefinition,
 } from '../core/session/setup'
 import type { FirstPlayerMode, SessionSetup as SessionSetupState } from '../core/session/types'
@@ -49,6 +50,10 @@ export function SessionSetup({
     onChange({ ...setup, firstPlayerSeat: seatIndex })
   }
 
+  function setSeatFaction(seatIndex: number, faction: string) {
+    onChange(updateSeatFaction(setup, seatIndex, faction))
+  }
+
   return (
     <section className="session-setup panel">
       <h2>{profile.metadata.name} — session setup</h2>
@@ -65,6 +70,7 @@ export function SessionSetup({
           allowRemoteHumans={allowRemoteHumans}
           onPlayerCountChange={setPlayerCount}
           onSeatKindChange={setSeatKind}
+          onSeatFactionChange={setSeatFaction}
           onFirstPlayerModeChange={setFirstPlayerMode}
           onFirstPlayerSeatChange={setFirstPlayerSeat}
         />
@@ -87,7 +93,7 @@ export function SessionSetup({
 
       <div className="setup-actions">
         <button type="button" disabled={errors.length > 0} onClick={onStart}>
-          Start game
+          Continue to table
         </button>
         <button type="button" className="secondary" onClick={onBack}>
           Back
@@ -106,6 +112,7 @@ interface SetupStepPanelProps {
   allowRemoteHumans: boolean
   onPlayerCountChange: (count: number) => void
   onSeatKindChange: (seatIndex: number, kind: 'human' | 'ai') => void
+  onSeatFactionChange: (seatIndex: number, faction: string) => void
   onFirstPlayerModeChange: (mode: FirstPlayerMode) => void
   onFirstPlayerSeatChange: (seatIndex: number) => void
 }
@@ -119,6 +126,7 @@ function SetupStepPanel({
   allowRemoteHumans,
   onPlayerCountChange,
   onSeatKindChange,
+  onSeatFactionChange,
   onFirstPlayerModeChange,
   onFirstPlayerSeatChange,
 }: SetupStepPanelProps) {
@@ -203,6 +211,7 @@ function SetupStepPanel({
         <div className="seat-row seat-header">
           <span>Seat</span>
           <span>Player</span>
+          <span>Faction</span>
           <span>Type</span>
         </div>
         {setup.seats.map((seat) => {
@@ -213,6 +222,19 @@ function SetupStepPanel({
             <div key={seat.seatIndex} className="seat-row">
               <span>#{seat.seatIndex + 1}</span>
               <span>{seatDisplayName(seat)}</span>
+              <span>
+                <select
+                  value={seat.faction}
+                  onChange={(e) => onSeatFactionChange(seat.seatIndex, e.target.value)}
+                  aria-label={`Faction for seat ${seat.seatIndex + 1}`}
+                >
+                  {profile.spec.deck.suits.map((suit) => (
+                    <option key={suit} value={suit}>
+                      {suit}
+                    </option>
+                  ))}
+                </select>
+              </span>
               <span className="seat-controls">
                 {isHost ? (
                   <span className="badge">Human (host)</span>

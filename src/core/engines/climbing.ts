@@ -32,6 +32,7 @@ export function createPlayersFromSeats(seats: SeatConfig[]): PlayerState[] {
     name: seatDisplayName(seat),
     kind: seat.kind,
     isHost: seat.isHost,
+    faction: seat.faction,
     hand: [],
     score: 0,
     passed: false,

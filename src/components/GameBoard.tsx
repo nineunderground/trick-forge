@@ -1,5 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { GameProfile } from '../core/profile/schema'
+import { needsAiTurn } from '../core/game-session'
+import type { SessionSetup as SessionSetupState } from '../core/session/types'
+import { LOCAL_PLAYER_SEAT } from '../core/session/types'
+import { getSeatConfig, seatDisplayName } from '../core/session/setup'
 import type { ClimbingGameState, PlayAction, PlayerState } from '../core/types'
 import {
   canPass,
@@ -7,27 +11,45 @@ import {
   getValidPlays,
   isLocallyControlledHuman,
 } from '../core/engines/climbing'
-import { LOCAL_PLAYER_SEAT } from '../core/session/types'
-import { CardView, HandBacks } from './CardView'
+import { CardView, FactionBadge, HandBacks } from './CardView'
+import { ConfirmModal } from './ConfirmModal'
 import { HelpModal } from './HelpModal'
 import { BackIcon, HelpIcon, IconButton, LeaveIcon } from './IconButton'
-import { getOpponents, getSeatGridArea, getSeatPositionClass } from './table-layout'
+import {
+  animationOriginForPosition,
+  getOpponents,
+  getSeatGridArea,
+  getSeatPositionClass,
+} from './table-layout'
+
+const PLAY_ANIM_MS = 520
+const AI_TURN_DELAY_MS = 720
 
 interface GameBoardProps {
   profile: GameProfile
-  state: ClimbingGameState
+  session: SessionSetupState
+  state: ClimbingGameState | null
+  matchStarted: boolean
+  onStartMatch: () => void
+  onPlayAgain: () => void
   onAction: (action: PlayAction | { type: 'pass' }) => void
+  onAiStep: () => void
   onBackToSetup: () => void
   onLeave: () => void
 }
 
-function OpponentSeat({
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function SeatPanel({
   player,
+  handCount,
   isActive,
   isHandStarter,
 }: {
-  player: PlayerState
-  totalPlayers: number
+  player: PlayerState | { name: string; faction: string; kind: string; isHost: boolean }
+  handCount: number
   isActive: boolean
   isHandStarter: boolean
 }) {
@@ -39,32 +61,70 @@ function OpponentSeat({
           {isHandStarter && <span className="first-player-badge">First player</span>}
         </span>
         <span className="seat-meta">
-          {player.score} pts · {player.kind === 'ai' ? 'AI' : 'Human'}
+          <FactionBadge faction={player.faction} />
+          {' · '}
+          {player.kind === 'ai' ? 'AI' : 'Human'}
+          {handCount >= 0 && ` · ${handCount} cards`}
         </span>
       </div>
       <div className="seat-cards centered-row">
-        <HandBacks count={player.hand.length} />
+        <HandBacks count={handCount} faction={player.faction} />
       </div>
     </div>
   )
 }
 
-export function GameBoard({ profile, state, onAction, onBackToSetup, onLeave }: GameBoardProps) {
-  const localPlayer = getLocalPlayer(state, LOCAL_PLAYER_SEAT)
+export function GameBoard({
+  profile,
+  session,
+  state,
+  matchStarted,
+  onStartMatch,
+  onPlayAgain,
+  onAction,
+  onAiStep,
+  onBackToSetup,
+  onLeave,
+}: GameBoardProps) {
   const [selected, setSelected] = useState<string[]>([])
   const [takeCardId, setTakeCardId] = useState<string | null>(null)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [leaveOpen, setLeaveOpen] = useState(false)
+  const [animating, setAnimating] = useState(false)
+  const logRef = useRef<HTMLUListElement>(null)
+  const prevLogLen = useRef(0)
 
+  const helpText = profile.metadata.help ?? profile.metadata.description ?? ''
+  const playerCount = session.playerCount
+
+  const previewSeats = session.seats.filter((s) => s.seatIndex !== LOCAL_PLAYER_SEAT)
+  const localSeatConfig = getSeatConfig(session, LOCAL_PLAYER_SEAT)
+
+  const localPlayer = state ? getLocalPlayer(state, LOCAL_PLAYER_SEAT) : null
   const validPlays = useMemo(
-    () => getValidPlays(state, localPlayer.hand),
-    [state, localPlayer.hand],
+    () => (state && localPlayer ? getValidPlays(state, localPlayer.hand) : []),
+    [state, localPlayer],
   )
 
-  const isHumanTurn = isLocallyControlledHuman(state, LOCAL_PLAYER_SEAT)
-  const opponents = getOpponents(state.players)
-  const logEntries = useMemo(() => [...state.log].reverse(), [state.log])
-  const handStarter = state.players[state.handStarterIndex]
-  const helpText = profile.metadata.help ?? profile.metadata.description ?? ''
+  const isHumanTurn =
+    Boolean(state && localPlayer) &&
+    isLocallyControlledHuman(state!, LOCAL_PLAYER_SEAT) &&
+    !animating
+
+  const opponents = state ? getOpponents(state.players) : previewSeats.map((seat) => ({
+    id: `preview-${seat.seatIndex}`,
+    seatIndex: seat.seatIndex,
+    name: seatDisplayName(seat),
+    kind: seat.kind,
+    isHost: seat.isHost,
+    faction: seat.faction,
+    hand: [],
+    score: 0,
+    passed: false,
+  }))
+
+  const logEntries = useMemo(() => (state ? [...state.log].reverse() : []), [state?.log])
+  const handStarter = state ? state.players[state.handStarterIndex] : null
 
   const matchingPlay = validPlays.find(
     (play) =>
@@ -73,7 +133,38 @@ export function GameBoard({ profile, state, onAction, onBackToSetup, onLeave }: 
   )
 
   const mustTake =
-    Boolean(state.table && isHumanTurn) && localPlayer.hand.length > selected.length
+    Boolean(state?.table && isHumanTurn && localPlayer) &&
+    localPlayer!.hand.length > selected.length
+
+  const tableAnimStyle = useMemo(() => {
+    if (!state?.table) return {}
+    const player = state.players.find((p) => p.id === state.table!.playedBy)
+    if (!player) return {}
+    const position = getSeatPositionClass(player.seatIndex, state.players.length)
+    return animationOriginForPosition(position)
+  }, [state?.table, state?.log.length, state?.players.length])
+
+  useEffect(() => {
+    if (!matchStarted || !state || state.phase !== 'playing') return
+    if (!needsAiTurn(state)) return
+    if (animating) return
+
+    const timer = window.setTimeout(() => {
+      setAnimating(true)
+      onAiStep()
+      window.setTimeout(() => setAnimating(false), PLAY_ANIM_MS)
+    }, AI_TURN_DELAY_MS)
+
+    return () => window.clearTimeout(timer)
+  }, [state, matchStarted, animating, onAiStep])
+
+  useEffect(() => {
+    if (!state || !logRef.current) return
+    if (state.log.length > prevLogLen.current) {
+      logRef.current.scrollTop = 0
+    }
+    prevLogLen.current = state.log.length
+  }, [state?.log.length])
 
   function toggleCard(id: string) {
     if (!isHumanTurn) return
@@ -82,9 +173,11 @@ export function GameBoard({ profile, state, onAction, onBackToSetup, onLeave }: 
     )
   }
 
-  function submitPlay() {
-    if (!matchingPlay) return
+  async function submitPlay() {
+    if (!matchingPlay || !localPlayer) return
     if (mustTake && !takeCardId) return
+    setAnimating(true)
+    await delay(PLAY_ANIM_MS)
     onAction({
       type: 'play',
       cardIds: selected,
@@ -92,16 +185,29 @@ export function GameBoard({ profile, state, onAction, onBackToSetup, onLeave }: 
     })
     setSelected([])
     setTakeCardId(null)
+    setAnimating(false)
   }
+
+  async function submitPass() {
+    setAnimating(true)
+    await delay(PLAY_ANIM_MS * 0.6)
+    onAction({ type: 'pass' })
+    setAnimating(false)
+  }
+
+  const showStartOverlay = !matchStarted
+  const showPlayAgain = Boolean(state && state.phase === 'finished')
 
   return (
     <div className="game-board">
       <header className="game-top-bar">
         <div className="game-title-block">
           <h2>{profile.metadata.name}</h2>
-          <p className="game-hand-leader">
-            First player this hand: <strong>{handStarter.name}</strong>
-          </p>
+          {handStarter && matchStarted && (
+            <p className="game-hand-leader">
+              First player this hand: <strong>{handStarter.name}</strong>
+            </p>
+          )}
         </div>
       </header>
 
@@ -113,105 +219,165 @@ export function GameBoard({ profile, state, onAction, onBackToSetup, onLeave }: 
         <div className="help-rules">{helpText}</div>
       </HelpModal>
 
+      <ConfirmModal
+        open={leaveOpen}
+        title="Leave game?"
+        message="You will return to the lobby and lose the current table."
+        confirmLabel="Leave"
+        onConfirm={() => {
+          setLeaveOpen(false)
+          onLeave()
+        }}
+        onCancel={() => setLeaveOpen(false)}
+      />
+
       <div className="table-arena">
         <div className="table-grid">
           {opponents.map((player) => {
-            const playerIndex = state.players.indexOf(player)
-            const position = getSeatPositionClass(player.seatIndex, state.players.length)
+            const playerIndex = state ? state.players.indexOf(player as PlayerState) : -1
+            const position = getSeatPositionClass(player.seatIndex, playerCount)
+            const handCount = state ? (player as PlayerState).hand.length : profile.spec.deal.cardsPerPlayer
+
             return (
               <div
                 key={player.id}
                 className={`seat-wrap seat-wrap--${position}`}
                 style={{ gridArea: getSeatGridArea(position) }}
               >
-                <OpponentSeat
+                <SeatPanel
                   player={player}
-                  totalPlayers={state.players.length}
+                  handCount={handCount}
                   isActive={
-                    state.currentPlayerIndex === playerIndex && state.phase === 'playing'
+                    Boolean(state) &&
+                    playerIndex === state!.currentPlayerIndex &&
+                    state!.phase === 'playing'
                   }
-                  isHandStarter={playerIndex === state.handStarterIndex}
+                  isHandStarter={Boolean(state) && playerIndex === state!.handStarterIndex}
                 />
               </div>
             )
           })}
 
-          <div className="table-felt">
-            {state.table ? (
+          <div className="table-felt" style={tableAnimStyle as CSSProperties}>
+            {showStartOverlay && (
+              <div className="table-overlay">
+                <p>Table is ready. Press Start when everyone is set.</p>
+                <button type="button" onClick={onStartMatch}>
+                  Start
+                </button>
+              </div>
+            )}
+
+            {showPlayAgain && (
+              <div className="table-overlay table-overlay--finished">
+                <p>Game over</p>
+                <button type="button" onClick={onPlayAgain}>
+                  Play again
+                </button>
+              </div>
+            )}
+
+            {!showStartOverlay && !showPlayAgain && state && (
               <>
-                <p className="table-label">Table</p>
-                <div className="card-row centered-row">
-                  {state.table.cards.map((card) => (
-                    <CardView
-                      key={card.id}
-                      card={card}
-                      selected={takeCardId === card.id}
-                      disabled={!mustTake}
-                      onClick={() => mustTake && setTakeCardId(card.id)}
-                    />
-                  ))}
-                </div>
-                <p className="hint table-hint">
-                  Play by {state.players.find((p) => p.id === state.table!.playedBy)?.name}
-                  {mustTake && ' — pick a card to take'}
-                </p>
+                {state.table ? (
+                  <>
+                    <p className="table-label">Table</p>
+                    <div
+                      key={`table-${state.log.length}`}
+                      className="card-row centered-row table-cards-animated"
+                    >
+                      {state.table.cards.map((card, index) => (
+                        <CardView
+                          key={card.id}
+                          card={card}
+                          className="card-animate-in"
+                          selected={takeCardId === card.id}
+                          disabled={!mustTake}
+                          onClick={() => mustTake && setTakeCardId(card.id)}
+                          style={{ animationDelay: `${index * 70}ms` }}
+                        />
+                      ))}
+                    </div>
+                    <p className="hint table-hint">
+                      Play by {state.players.find((p) => p.id === state.table!.playedBy)?.name}
+                      {mustTake && ' — pick a card to take'}
+                    </p>
+                  </>
+                ) : (
+                  <p className="table-empty">Waiting for lead…</p>
+                )}
               </>
-            ) : (
-              <p className="table-empty">Waiting for lead…</p>
             )}
           </div>
         </div>
       </div>
 
-      <section
-        className={`local-player ${isHumanTurn ? 'local-player--active' : ''} ${state.currentPlayerIndex === state.players.indexOf(localPlayer) && state.phase === 'playing' ? 'seat--active' : ''}`}
-      >
-        <div className="local-player-header">
-          <span className="seat-name">
-            {localPlayer.name}
-            {state.handStarterIndex === state.players.indexOf(localPlayer) && (
-              <span className="first-player-badge">First player</span>
-            )}
-          </span>
-          <span className="seat-meta">
-            {localPlayer.score} pts
-            {isHumanTurn ? ' · your turn' : ''}
-          </span>
-        </div>
+      {localSeatConfig && (
+        <section
+          className={`local-player ${
+            isHumanTurn ? 'local-player--active' : ''
+          } ${
+            state &&
+            state.currentPlayerIndex === state.players.findIndex((p) => p.seatIndex === LOCAL_PLAYER_SEAT) &&
+            state.phase === 'playing'
+              ? 'seat--active'
+              : ''
+          }`}
+        >
+          <div className="local-player-header">
+            <span className="seat-name">
+              {localSeatConfig.isHost ? 'You (host)' : seatDisplayName(localSeatConfig)}
+              {state && state.handStarterIndex === state.players.findIndex((p) => p.seatIndex === LOCAL_PLAYER_SEAT) && (
+                <span className="first-player-badge">First player</span>
+              )}
+            </span>
+            <span className="seat-meta">
+              <FactionBadge faction={localSeatConfig.faction} />
+              {localPlayer && ` · ${localPlayer.score} pts`}
+              {isHumanTurn ? ' · your turn' : ''}
+            </span>
+          </div>
 
-        <div className="card-row centered-row local-hand">
-          {localPlayer.hand.map((card) => (
-            <CardView
-              key={card.id}
-              card={card}
-              selected={selected.includes(card.id)}
-              disabled={!isHumanTurn}
-              onClick={() => toggleCard(card.id)}
-            />
-          ))}
-        </div>
+          <div className={`card-row centered-row local-hand ${animating ? 'hand-animating' : ''}`}>
+            {matchStarted && localPlayer
+              ? localPlayer.hand.map((card) => (
+                  <CardView
+                    key={card.id}
+                    card={card}
+                    selected={selected.includes(card.id)}
+                    disabled={!isHumanTurn}
+                    onClick={() => toggleCard(card.id)}
+                  />
+                ))
+              : (
+                  <HandBacks
+                    count={profile.spec.deal.cardsPerPlayer}
+                    faction={localSeatConfig.faction}
+                    small={false}
+                  />
+                )}
+          </div>
 
-        {state.phase === 'finished' ? (
-          <p className="banner finished">Game over</p>
-        ) : (
-          <section className="actions centered-row">
-            <button
-              type="button"
-              disabled={!isHumanTurn || !matchingPlay || (mustTake && !takeCardId)}
-              onClick={submitPlay}
-            >
-              Play selection
-            </button>
-            <button
-              type="button"
-              disabled={!isHumanTurn || !canPass(state)}
-              onClick={() => onAction({ type: 'pass' })}
-            >
-              Pass
-            </button>
-          </section>
-        )}
-      </section>
+          {matchStarted && state && state.phase !== 'finished' && (
+            <section className="actions centered-row">
+              <button
+                type="button"
+                disabled={!isHumanTurn || !matchingPlay || (mustTake && !takeCardId)}
+                onClick={submitPlay}
+              >
+                Play selection
+              </button>
+              <button
+                type="button"
+                disabled={!isHumanTurn || !canPass(state)}
+                onClick={submitPass}
+              >
+                Pass
+              </button>
+            </section>
+          )}
+        </section>
+      )}
 
       <footer className="game-bottom-bar">
         <div className="game-toolbar-icons">
@@ -221,16 +387,18 @@ export function GameBoard({ profile, state, onAction, onBackToSetup, onLeave }: 
           <IconButton label="Back to setup" onClick={onBackToSetup}>
             <BackIcon />
           </IconButton>
-          <IconButton label="Leave game" onClick={onLeave}>
+          <IconButton label="Leave game" onClick={() => setLeaveOpen(true)}>
             <LeaveIcon />
           </IconButton>
         </div>
 
         <section className="log log-notebook" aria-label="Game log">
-          <ul>
-            {logEntries.map((entry, i) => (
-              <li key={`${entry}-${i}`}>{entry}</li>
-            ))}
+          <ul ref={logRef}>
+            {logEntries.length === 0 ? (
+              <li className="log-placeholder">The log will update after you press Start.</li>
+            ) : (
+              logEntries.map((entry, i) => <li key={`${entry}-${i}`}>{entry}</li>)
+            )}
           </ul>
         </section>
       </footer>

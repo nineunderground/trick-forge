@@ -3,7 +3,11 @@ import { GameBoard } from './components/GameBoard'
 import { Lobby } from './components/Lobby'
 import { ProfilePicker } from './components/ProfilePicker'
 import { SessionSetup } from './components/SessionSetup'
-import { createGame, dispatchHumanAction } from './core/game-session'
+import {
+  createGame,
+  dispatchHumanAction,
+  runSingleAiTurn,
+} from './core/game-session'
 import type { LoadedProfile } from './core/profile/loader'
 import { createDefaultSessionSetup } from './core/session/setup'
 import type { SessionSetup as SessionSetupState } from './core/session/types'
@@ -17,18 +21,30 @@ function App() {
   const [loaded, setLoaded] = useState<LoadedProfile | null>(null)
   const [sessionSetup, setSessionSetup] = useState<SessionSetupState | null>(null)
   const [gameState, setGameState] = useState<ClimbingGameState | null>(null)
+  const [matchStarted, setMatchStarted] = useState(false)
 
   function handleProfileLoaded(next: LoadedProfile) {
     setLoaded(next)
     setSessionSetup(createDefaultSessionSetup(next.profile))
     setGameState(null)
+    setMatchStarted(false)
     setScreen('setup')
   }
 
-  function startGame() {
+  function enterTable() {
+    setScreen('game')
+    setGameState(null)
+    setMatchStarted(false)
+  }
+
+  function beginMatch() {
     if (!loaded || !sessionSetup) return
     setGameState(createGame(loaded.profile, sessionSetup))
-    setScreen('game')
+    setMatchStarted(true)
+  }
+
+  function playAgain() {
+    beginMatch()
   }
 
   function handleAction(action: Parameters<typeof dispatchHumanAction>[2]) {
@@ -36,11 +52,23 @@ function App() {
     setGameState(dispatchHumanAction(gameState, loaded.profile, action))
   }
 
+  function handleAiStep() {
+    if (!loaded || !gameState) return
+    setGameState(runSingleAiTurn(gameState, loaded.profile))
+  }
+
   function resetToLobby() {
     setScreen('lobby')
     setLoaded(null)
     setSessionSetup(null)
     setGameState(null)
+    setMatchStarted(false)
+  }
+
+  function backToSetup() {
+    setGameState(null)
+    setMatchStarted(false)
+    setScreen('setup')
   }
 
   return (
@@ -68,21 +96,23 @@ function App() {
           profile={loaded.profile}
           setup={sessionSetup}
           onChange={setSessionSetup}
-          onStart={startGame}
+          onStart={enterTable}
           onBack={() => setScreen('profile')}
         />
       )}
 
-      {screen === 'game' && loaded && gameState && (
+      {screen === 'game' && loaded && sessionSetup && (
         <div className="game-shell">
           <GameBoard
             profile={loaded.profile}
+            session={sessionSetup}
             state={gameState}
+            matchStarted={matchStarted}
+            onStartMatch={beginMatch}
+            onPlayAgain={playAgain}
             onAction={handleAction}
-            onBackToSetup={() => {
-              setGameState(null)
-              setScreen('setup')
-            }}
+            onAiStep={handleAiStep}
+            onBackToSetup={backToSetup}
             onLeave={resetToLobby}
           />
         </div>

@@ -10,6 +10,7 @@ export interface PlayerState {
   name: string
   kind: 'human' | 'ai'
   isHost: boolean
+  faction: string
   hand: Card[]
   score: number
   passed: boolean

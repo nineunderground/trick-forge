@@ -1,14 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { Card } from '../core/types'
-
-const SUIT_COLORS: Record<string, string> = {
-  red: '#e74c3c',
-  blue: '#3498db',
-  green: '#2ecc71',
-  yellow: '#f1c40f',
-  purple: '#9b59b6',
-  orange: '#e67e22',
-}
+import { factionColor } from '../core/colors'
 
 interface CardViewProps {
   card: Card
@@ -16,6 +8,8 @@ interface CardViewProps {
   disabled?: boolean
   onClick?: () => void
   small?: boolean
+  className?: string
+  style?: CSSProperties
 }
 
 export function CardView({
@@ -24,14 +18,16 @@ export function CardView({
   disabled = false,
   onClick,
   small = false,
+  className = '',
+  style,
 }: CardViewProps) {
-  const color = SUIT_COLORS[card.suit] ?? '#95a5a6'
+  const color = factionColor(card.suit)
 
   return (
     <button
       type="button"
-      className={`card ${selected ? 'selected' : ''} ${small ? 'small' : ''}`}
-      style={{ borderColor: color, color }}
+      className={`card ${selected ? 'selected' : ''} ${small ? 'small' : ''} ${className}`.trim()}
+      style={{ borderColor: color, color, ...style }}
       disabled={disabled}
       onClick={onClick}
       aria-pressed={selected}
@@ -44,14 +40,20 @@ export function CardView({
 
 interface CardBackProps {
   small?: boolean
+  faction?: string
   style?: CSSProperties
 }
 
-export function CardBack({ small = false, style }: CardBackProps) {
+export function CardBack({ small = false, faction, style }: CardBackProps) {
+  const accent = faction ? factionColor(faction) : undefined
+
   return (
     <div
       className={`card card-back ${small ? 'small' : ''}`}
-      style={style}
+      style={{
+        ...style,
+        boxShadow: accent ? `inset 0 4px 0 0 ${accent}` : undefined,
+      }}
       aria-hidden="true"
     />
   )
@@ -60,9 +62,10 @@ export function CardBack({ small = false, style }: CardBackProps) {
 interface HandBacksProps {
   count: number
   small?: boolean
+  faction?: string
 }
 
-export function HandBacks({ count, small = true }: HandBacksProps) {
+export function HandBacks({ count, small = true, faction }: HandBacksProps) {
   if (count === 0) {
     return <span className="hand-empty-label">No cards</span>
   }
@@ -75,10 +78,23 @@ export function HandBacks({ count, small = true }: HandBacksProps) {
         <CardBack
           key={i}
           small={small}
+          faction={faction}
           style={{ zIndex: i, marginLeft: i === 0 ? 0 : small ? -14 : -18 }}
         />
       ))}
       <span className="card-count-badge">{count}</span>
     </div>
+  )
+}
+
+export function FactionBadge({ faction }: { faction: string }) {
+  return (
+    <span
+      className="faction-badge"
+      style={{ backgroundColor: factionColor(faction), borderColor: factionColor(faction) }}
+      title={faction}
+    >
+      {faction}
+    </span>
   )
 }

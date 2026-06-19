@@ -10,7 +10,7 @@ export interface SetupStepDefinition {
 
 const DEFAULT_SETUP_STEPS: SetupStepDefinition[] = [
   { id: 'playerCount', type: 'playerCount' },
-  { id: 'seats', type: 'seatAssignment', hostSeat: 0, allowRemoteHumans: false },
+  { id: 'seatAssignment', type: 'seatAssignment', hostSeat: 0, allowRemoteHumans: false },
   { id: 'firstPlayer', type: 'firstPlayer' },
 ]
 
@@ -18,11 +18,16 @@ export function getSetupSteps(profile: GameProfile): SetupStepDefinition[] {
   return profile.spec.session?.setupSteps ?? DEFAULT_SETUP_STEPS
 }
 
+export function defaultFaction(factions: string[], seatIndex: number): string {
+  return factions[seatIndex % factions.length] ?? factions[0] ?? 'red'
+}
+
 export function createDefaultSessionSetup(profile: GameProfile): SessionSetup {
   const playerCount = profile.spec.players.default
+  const factions = profile.spec.deck.suits
   return {
     playerCount,
-    seats: buildSeats(playerCount, getSetupSteps(profile)),
+    seats: buildSeats(playerCount, getSetupSteps(profile), factions),
     firstPlayerMode: 'random',
     firstPlayerSeat: 0,
   }
@@ -42,6 +47,7 @@ export function seatLabelForSetup(seat: SeatConfig): string {
 export function buildSeats(
   playerCount: number,
   steps: SetupStepDefinition[],
+  factions: string[],
 ): SeatConfig[] {
   const seatStep = steps.find((s) => s.type === 'seatAssignment')
   const hostSeat = seatStep?.hostSeat ?? 0
@@ -50,6 +56,7 @@ export function buildSeats(
     seatIndex,
     isHost: seatIndex === hostSeat,
     kind: seatIndex === hostSeat ? 'human' : 'ai',
+    faction: defaultFaction(factions, seatIndex),
   }))
 }
 
@@ -64,6 +71,7 @@ export function resizeSessionSetup(
   )
   const steps = getSetupSteps(profile)
   const hostSeat = steps.find((s) => s.type === 'seatAssignment')?.hostSeat ?? 0
+  const factions = profile.spec.deck.suits
   const previous = new Map(setup.seats.map((s) => [s.seatIndex, s]))
 
   const seats = Array.from({ length: clamped }, (_, seatIndex) => {
@@ -72,9 +80,19 @@ export function resizeSessionSetup(
       return { ...existing, isHost: false }
     }
     if (seatIndex === hostSeat) {
-      return { seatIndex, isHost: true, kind: 'human' as const }
+      return {
+        seatIndex,
+        isHost: true,
+        kind: 'human' as const,
+        faction: existing?.faction ?? defaultFaction(factions, seatIndex),
+      }
     }
-    return { seatIndex, isHost: false, kind: 'ai' as const }
+    return {
+      seatIndex,
+      isHost: false,
+      kind: 'ai' as const,
+      faction: existing?.faction ?? defaultFaction(factions, seatIndex),
+    }
   })
 
   return {
@@ -104,12 +122,26 @@ export function updateSeatKind(
   }
 }
 
+export function updateSeatFaction(
+  setup: SessionSetup,
+  seatIndex: number,
+  faction: string,
+): SessionSetup {
+  return {
+    ...setup,
+    seats: setup.seats.map((seat) =>
+      seat.seatIndex === seatIndex ? { ...seat, faction } : seat,
+    ),
+  }
+}
+
 export function validateSessionSetup(
   profile: GameProfile,
   setup: SessionSetup,
 ): string[] {
   const errors: string[] = []
   const { min, max } = profile.spec.players
+  const factions = new Set(profile.spec.deck.suits)
 
   if (setup.playerCount < min || setup.playerCount > max) {
     errors.push(`Player count must be between ${min} and ${max}.`)
@@ -138,6 +170,12 @@ export function validateSessionSetup(
     errors.push('First player seat is out of range.')
   }
 
+  for (const seat of setup.seats) {
+    if (!factions.has(seat.faction)) {
+      errors.push(`Invalid faction for seat ${seat.seatIndex + 1}.`)
+    }
+  }
+
   return errors
 }
 
@@ -156,4 +194,8 @@ export function seatDisplayName(seat: SeatConfig): string {
   if (seat.isHost) return 'You (host)'
   if (seat.kind === 'ai') return `AI ${seat.seatIndex}`
   return `Player ${seat.seatIndex + 1}`
+}
+
+export function getSeatConfig(session: SessionSetup, seatIndex: number): SeatConfig | undefined {
+  return session.seats.find((s) => s.seatIndex === seatIndex)
 }
