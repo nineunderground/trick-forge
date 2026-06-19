@@ -194,6 +194,10 @@ export function applyAction(
     return advanceTurn(next)
   }
 
+  if (action.type !== 'play') {
+    throw new Error(`Unsupported climbing action: ${action.type}`)
+  }
+
   const previousTable = next.table
   const played = cardsByIds(player.hand, action.cardIds)
   const valid = getValidPlays(next, player.hand)

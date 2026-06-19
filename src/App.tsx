@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { GameBoard } from './components/GameBoard'
+import { TrickTakingBoard } from './components/TrickTakingBoard'
 import { Lobby } from './components/Lobby'
 import { ProfilePicker } from './components/ProfilePicker'
 import { SessionSetup } from './components/SessionSetup'
@@ -12,7 +13,7 @@ import {
 import type { LoadedProfile } from './core/profile/loader'
 import { createDefaultSessionSetup } from './core/session/setup'
 import type { SessionSetup as SessionSetupState } from './core/session/types'
-import type { ClimbingGameState } from './core/types'
+import type { GameState, PlayerAction } from './core/types'
 import './App.css'
 
 type AppScreen = 'lobby' | 'profile' | 'setup' | 'game'
@@ -21,7 +22,7 @@ function App() {
   const [screen, setScreen] = useState<AppScreen>('lobby')
   const [loaded, setLoaded] = useState<LoadedProfile | null>(null)
   const [sessionSetup, setSessionSetup] = useState<SessionSetupState | null>(null)
-  const [gameState, setGameState] = useState<ClimbingGameState | null>(null)
+  const [gameState, setGameState] = useState<GameState | null>(null)
   const [matchStarted, setMatchStarted] = useState(false)
 
   function handleProfileLoaded(next: LoadedProfile) {
@@ -48,7 +49,7 @@ function App() {
     beginMatch()
   }
 
-  function handleAction(action: Parameters<typeof dispatchHumanAction>[2]) {
+  function handleAction(action: PlayerAction) {
     if (!loaded || !gameState) return
     setGameState(dispatchHumanAction(gameState, loaded.profile, action))
   }
@@ -76,6 +77,8 @@ function App() {
     setMatchStarted(false)
     setScreen('setup')
   }
+
+  const isTrickTaking = loaded?.profile.spec.family === 'trick-taking'
 
   return (
     <div className={`app ${screen === 'game' ? 'app--game' : ''}`}>
@@ -109,19 +112,35 @@ function App() {
 
       {screen === 'game' && loaded && sessionSetup && (
         <div className="game-shell">
-          <GameBoard
-            profile={loaded.profile}
-            session={sessionSetup}
-            state={gameState}
-            matchStarted={matchStarted}
-            onStartMatch={beginMatch}
-            onPlayAgain={playAgain}
-            onAction={handleAction}
-            onAiStep={handleAiStep}
-            onContinueRound={handleContinueRound}
-            onBackToSetup={backToSetup}
-            onLeave={resetToLobby}
-          />
+          {isTrickTaking ? (
+            <TrickTakingBoard
+              profile={loaded.profile}
+              session={sessionSetup}
+              state={gameState?.family === 'trick-taking' ? gameState : null}
+              matchStarted={matchStarted}
+              onStartMatch={beginMatch}
+              onPlayAgain={playAgain}
+              onAction={handleAction}
+              onAiStep={handleAiStep}
+              onContinueRound={handleContinueRound}
+              onBackToSetup={backToSetup}
+              onLeave={resetToLobby}
+            />
+          ) : (
+            <GameBoard
+              profile={loaded.profile}
+              session={sessionSetup}
+              state={gameState?.family === 'climbing' ? gameState : null}
+              matchStarted={matchStarted}
+              onStartMatch={beginMatch}
+              onPlayAgain={playAgain}
+              onAction={handleAction}
+              onAiStep={handleAiStep}
+              onContinueRound={handleContinueRound}
+              onBackToSetup={backToSetup}
+              onLeave={resetToLobby}
+            />
+          )}
         </div>
       )}
 

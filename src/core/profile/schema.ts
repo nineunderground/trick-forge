@@ -78,6 +78,23 @@ const climbingRulesSchema = z.object({
   }),
 })
 
+const trickTakingRulesSchema = z.object({
+  roundCount: z.number().int().min(1).optional(),
+  dealMode: z.enum(['increment', 'fixed']).optional(),
+  trumpSuit: z.string().min(1).optional(),
+  scoring: z.enum(['skull-king-classic']).optional(),
+  bonuses: z.boolean().optional(),
+  specialCards: z
+    .object({
+      escape: z.number().int().min(0).optional(),
+      pirate: z.number().int().min(0).optional(),
+      skullKing: z.number().int().min(0).optional(),
+      mermaid: z.number().int().min(0).optional(),
+      tigress: z.number().int().min(0).optional(),
+    })
+    .optional(),
+})
+
 export const gameProfileSchema = z
   .object({
     apiVersion: z.literal('trickforge/v1'),
@@ -101,7 +118,7 @@ export const gameProfileSchema = z
       display: displaySchema.optional(),
       rules: z.object({
         climbing: climbingRulesSchema.optional(),
-        trickTaking: z.record(z.string(), z.unknown()).optional(),
+        trickTaking: trickTakingRulesSchema.optional(),
       }),
     }),
   })
@@ -121,11 +138,11 @@ export const gameProfileSchema = z
         path: ['spec', 'rules', 'climbing'],
       })
     }
-    if (family === 'trick-taking') {
+    if (family === 'trick-taking' && !rules.trickTaking) {
       ctx.addIssue({
         code: 'custom',
-        message: 'trick-taking family is not implemented yet',
-        path: ['spec', 'family'],
+        message: 'trick-taking profiles require spec.rules.trickTaking',
+        path: ['spec', 'rules', 'trickTaking'],
       })
     }
   })

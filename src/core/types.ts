@@ -1,7 +1,16 @@
+export type CardKind =
+  | 'numbered'
+  | 'escape'
+  | 'pirate'
+  | 'skull-king'
+  | 'mermaid'
+  | 'tigress'
+
 export interface Card {
   id: string
   suit: string
   rank: number
+  kind?: CardKind
 }
 
 export interface PlayerState {
@@ -18,6 +27,7 @@ export interface PlayerState {
 
 export type GamePhase =
   | 'setup'
+  | 'bidding'
   | 'playing'
   | 'round-summary'
   | 'hand-scoring'
@@ -61,7 +71,41 @@ export interface ClimbingGameState {
   log: string[]
 }
 
-export type GameState = ClimbingGameState
+export interface TrickPlay {
+  playerId: string
+  card: Card
+  tigressAs?: 'pirate' | 'escape'
+}
+
+export interface TrickTakingGameState {
+  family: 'trick-taking'
+  phase: 'bidding' | 'playing' | 'round-summary' | 'finished'
+  players: PlayerState[]
+  deck: Card[]
+  currentPlayerIndex: number
+  dealerIndex: number
+  roundNumber: number
+  cardsDealt: number
+  trumpSuit: string
+  bids: Record<string, number | null>
+  tricksWon: Record<string, number>
+  /** All cards captured in tricks this round, per player. */
+  trickStacks: Record<string, Card[]>
+  currentTrick: TrickPlay[]
+  /** Completed tricks this round (for bonus scoring). */
+  completedTricks: TrickPlay[][]
+  /** Numbered suit that must be followed once set. */
+  leadSuit: string | null
+  trickLeadKind: 'numbered' | 'escape' | 'character' | null
+  gameEnd: GameEndConfig
+  matchEnding: boolean
+  lastHandDeltas: HandScoreDelta[]
+  lastRoundBonuses: Record<string, number>
+  lastRoundBidPoints: Record<string, number>
+  log: string[]
+}
+
+export type GameState = ClimbingGameState | TrickTakingGameState
 
 export interface PlayAction {
   type: 'play'
@@ -73,7 +117,23 @@ export interface PassAction {
   type: 'pass'
 }
 
-export type PlayerAction = PlayAction | PassAction | ContinueAction
+export interface BidAction {
+  type: 'bid'
+  amount: number
+}
+
+export interface TrickPlayAction {
+  type: 'play-trick'
+  cardId: string
+  tigressAs?: 'pirate' | 'escape'
+}
+
+export type PlayerAction =
+  | PlayAction
+  | PassAction
+  | BidAction
+  | TrickPlayAction
+  | ContinueAction
 
 export interface ContinueAction {
   type: 'continue'

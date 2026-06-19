@@ -1,4 +1,4 @@
-import type { Card } from './types'
+import type { Card, CardKind } from './types'
 
 export function createDeck(
   suits: string[],
@@ -14,11 +14,52 @@ export function createDeck(
           id: `c${id++}`,
           suit,
           rank,
+          kind: 'numbered',
         })
       }
     }
   }
   return deck
+}
+
+export interface SpecialCardCounts {
+  escape?: number
+  pirate?: number
+  skullKing?: number
+  mermaid?: number
+  tigress?: number
+}
+
+export function appendSpecialCards(
+  deck: Card[],
+  counts: SpecialCardCounts,
+): Card[] {
+  let id = deck.length
+  const push = (kind: CardKind, suit: string, rank: number) => {
+    deck.push({ id: `c${id++}`, suit, rank, kind })
+  }
+
+  for (let i = 0; i < (counts.escape ?? 0); i += 1) {
+    push('escape', 'escape', i + 1)
+  }
+  for (let i = 0; i < (counts.pirate ?? 0); i += 1) {
+    push('pirate', 'pirate', i + 1)
+  }
+  for (let i = 0; i < (counts.skullKing ?? 0); i += 1) {
+    push('skull-king', 'skull-king', 1)
+  }
+  for (let i = 0; i < (counts.mermaid ?? 0); i += 1) {
+    push('mermaid', 'mermaid', i + 1)
+  }
+  for (let i = 0; i < (counts.tigress ?? 0); i += 1) {
+    push('tigress', 'tigress', 1)
+  }
+
+  return deck
+}
+
+export function cardKind(card: Card): CardKind {
+  return card.kind ?? 'numbered'
 }
 
 export function shuffle<T>(items: T[]): T[] {

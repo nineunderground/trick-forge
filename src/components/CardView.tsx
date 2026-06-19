@@ -1,6 +1,25 @@
 import type { CSSProperties, DragEvent } from 'react'
 import type { Card } from '../core/types'
+import { cardKind } from '../core/cards'
 import { factionColor } from '../core/colors'
+
+function cardDisplay(card: Card): { rank: string; suit: string } {
+  const kind = cardKind(card)
+  switch (kind) {
+    case 'escape':
+      return { rank: 'Esc', suit: 'escape' }
+    case 'pirate':
+      return { rank: 'Pir', suit: `#${card.rank}` }
+    case 'skull-king':
+      return { rank: 'SK', suit: 'king' }
+    case 'mermaid':
+      return { rank: 'Mer', suit: `#${card.rank}` }
+    case 'tigress':
+      return { rank: 'Tig', suit: 'ress' }
+    default:
+      return { rank: String(card.rank), suit: card.suit.slice(0, 4) }
+  }
+}
 
 interface CardViewProps {
   card: Card
@@ -34,6 +53,7 @@ export function CardView({
   onDrop,
 }: CardViewProps) {
   const color = factionColor(card.suit)
+  const display = cardDisplay(card)
 
   return (
     <button
@@ -50,8 +70,8 @@ export function CardView({
       onDrop={onDrop}
       aria-pressed={selected}
     >
-      <span className="rank">{card.rank}</span>
-      <span className="suit">{card.suit.slice(0, 3)}</span>
+      <span className="rank">{display.rank}</span>
+      <span className="suit">{display.suit}</span>
     </button>
   )
 }

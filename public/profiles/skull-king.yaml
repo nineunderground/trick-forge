@@ -1,0 +1,86 @@
+apiVersion: trickforge/v1
+kind: GameProfile
+metadata:
+  id: skull-king
+  name: Skull King
+  version: "1.0"
+  description: >
+    Trick-taking pirate adventure. Bid how many tricks you will win each round;
+    score bonuses for exact bids and capturing special cards. Highest score after
+    10 rounds wins.
+  help: |
+    OBJECT
+    Score the most points after 10 rounds of bidding and trick-taking.
+
+    SETUP
+    Shuffle the deck (4 suits 1–14, Jolly Roger trump, plus special cards).
+    Round 1: deal 1 card each. Each round deals one more card per player.
+
+    BIDDING
+    Starting left of the dealer, each player bids how many tricks they will take (0 to hand size).
+
+    PLAY
+    Left of dealer leads. Follow suit on numbered cards if you can; special cards may be played anytime.
+    Escape loses the trick. Pirates beat numbers. Skull King beats Pirates. Mermaid beats Skull King.
+    Tigress counts as Pirate or Escape when played.
+
+    SCORING (Skull King classic)
+    Exact bid: +20 per trick bid. Off bid: −10 per trick off.
+    Zero bid exact: +10 × cards dealt. Zero bid wrong: −10 × cards dealt.
+    Bonuses only when bid is exact: 14s (+10, Jolly Roger 14 +20), character captures (+20/+30/+40).
+  authors:
+    - Grandpa Beck's Games
+  tags:
+    - trick-taking
+    - bidding
+    - pirates
+spec:
+  family: trick-taking
+  players:
+    min: 2
+    max: 6
+    default: 4
+  deck:
+    suits:
+      - parrot
+      - map
+      - chest
+      - jolly-roger
+    ranks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    copies: 1
+  deal:
+    cardsPerPlayer: 1
+  scoring:
+    mode: reward
+    pointsPerRemainingCard: 0
+    gameEndThreshold: 999
+    winner: highest
+  session:
+    setupSteps:
+      - id: playerCount
+        type: playerCount
+      - id: seatAssignment
+        type: seatAssignment
+        hostSeat: 0
+        allowRemoteHumans: false
+      - id: gameEnd
+        type: gameEnd
+        defaultMode: roundCount
+        defaultRoundCount: 10
+        minRoundCount: 10
+        maxRoundCount: 10
+      - id: firstPlayer
+        type: firstPlayer
+  rules:
+    trickTaking:
+      roundCount: 10
+      dealMode: increment
+      trumpSuit: jolly-roger
+      scoring: skull-king-classic
+      bonuses: true
+      specialCards:
+        escape: 5
+        pirate: 5
+        skullKing: 1
+        mermaid: 2
+        tigress: 1
