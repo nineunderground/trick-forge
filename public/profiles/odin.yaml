@@ -3,10 +3,54 @@ kind: GameProfile
 metadata:
   id: odin
   name: Odin
-  version: "1.1"
+  version: "1.2"
   description: >
     Climbing card game (54 cards, ranks 1–9 in six colours). Empty your hand to
     end a hand; score 1 point per card left. Play to 15 points; lowest score wins.
+  help: |
+    COMPONENTS
+    54 cards numbered 1 to 9 in 6 colours.
+
+    OBJECT OF THE GAME
+    Be the first to discard all the cards from your hand and have the fewest points at the end of the game.
+
+    SETUP
+    1. Shuffle all the cards.
+    2. Deal 9 cards face down to each player.
+    3. Choose a first player. Turns proceed clockwise.
+
+    HOW TO PLAY
+    The game is played over several hands. Each hand is divided into rounds.
+
+    At the start of a round, the first player plays 1 card face up in the middle of the table.
+    Each player then takes turns to either play 1 or more cards, or pass.
+
+    PLAY 1 OR MORE CARDS
+    • The value of the cards you play must be greater than the value on the table.
+    • You can play the same number of cards as on the table, or 1 card more — not fewer, and not 2 more.
+    • If there is already a set of 2 cards, you may play 2 or 3 cards — not 1 alone and not 4.
+    • Multiple cards must be the same number or the same colour.
+    • Value uses each digit highest-to-lowest (e.g. 2 and 8 same colour = 82, not 28).
+
+    After playing, pick up 1 card from the previous table set (not a card you just played):
+    • If there was 1 card, you must take it.
+    • If there was a set, choose 1 card; the rest of that set is discarded.
+
+    PASS
+    If you pass, you play no cards. You may play again on a later turn in the same round.
+
+    END OF A ROUND
+    If all but one player pass, discard the table cards. The last player to play starts a new round.
+
+    END OF A HAND
+    1. When starting a new round, if all cards in your hand share the same number or colour, you may play them all to end the hand; otherwise play 1 card as usual.
+    2. If you play and your hand becomes empty, do not take a card from the table — the hand ends.
+
+    Scoring: 1 point per card left in your hand. Shuffle, deal 9 cards again. The player to the left of the previous hand’s first player starts the next hand.
+
+    END OF THE GAME
+    Recommended: play to 15 points. When someone reaches 15+, the fewest points wins. Ties share the victory.
+    Variants: 10 (short), 20 (long), or a single hand.
   authors:
     - Helvetiq
   tags:
@@ -43,6 +87,8 @@ spec:
         type: seatAssignment
         hostSeat: 0
         allowRemoteHumans: false
+      - id: firstPlayer
+        type: firstPlayer
   rules:
     climbing:
       openingPlay: single_card

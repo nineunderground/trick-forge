@@ -59,21 +59,22 @@ function dealHands(profile: GameProfile, players: PlayerState[]): Card[] {
 export function initClimbingGame(
   profile: GameProfile,
   seats: SeatConfig[],
+  handStarterIndex: number,
 ): ClimbingGameState {
   const players = createPlayersFromSeats(seats)
   const deck = dealHands(profile, players)
-  const handStarterIndex = Math.floor(Math.random() * players.length)
+  const starter = Math.min(Math.max(0, handStarterIndex), players.length - 1)
 
   return {
     family: 'climbing',
     phase: 'playing',
     players,
     deck,
-    currentPlayerIndex: handStarterIndex,
-    handStarterIndex,
+    currentPlayerIndex: starter,
+    handStarterIndex: starter,
     table: null,
     allowHandBombOnOpen: false,
-    log: [`New hand. ${players[handStarterIndex].name} leads the first round.`],
+    log: [`New hand. ${players[starter].name} leads the first round.`],
   }
 }
 

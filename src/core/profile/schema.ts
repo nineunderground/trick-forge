@@ -25,7 +25,7 @@ const scoringSchema = z.object({
 
 const setupStepSchema = z.object({
   id: z.string().min(1),
-  type: z.enum(['playerCount', 'seatAssignment']),
+  type: z.enum(['playerCount', 'seatAssignment', 'firstPlayer']),
   hostSeat: z.number().int().min(0).optional(),
   allowRemoteHumans: z.boolean().optional(),
 })
@@ -71,6 +71,7 @@ export const gameProfileSchema = z
       name: z.string().min(1),
       version: z.string().min(1),
       description: z.string().optional(),
+      help: z.string().optional(),
       authors: z.array(z.string()).optional(),
       tags: z.array(z.string()).optional(),
     }),

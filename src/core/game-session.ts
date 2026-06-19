@@ -6,7 +6,7 @@ import {
 } from './engines/climbing'
 import type { SessionSetup } from './session/types'
 import { LOCAL_PLAYER_SEAT } from './session/types'
-import { validateSessionSetup } from './session/setup'
+import { validateSessionSetup, resolveFirstPlayerSeat } from './session/setup'
 import type { ClimbingGameState, PlayerAction } from './types'
 
 export function createGame(
@@ -22,7 +22,11 @@ export function createGame(
     throw new Error(errors.join(' '))
   }
 
-  const state = initClimbingGame(profile, session.seats)
+  const state = initClimbingGame(
+    profile,
+    session.seats,
+    resolveFirstPlayerSeat(session),
+  )
   return runAiTurnsWhileNeeded(state, profile, LOCAL_PLAYER_SEAT)
 }
 

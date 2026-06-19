@@ -25,17 +25,22 @@ function OpponentSeat({
   player,
   totalPlayers,
   isActive,
+  isHandStarter,
 }: {
   player: PlayerState
   totalPlayers: number
   isActive: boolean
+  isHandStarter: boolean
 }) {
   const position = getSeatPositionClass(player.seatIndex, totalPlayers)
 
   return (
     <div className={`seat seat--${position} ${isActive ? 'seat--active' : ''}`}>
       <div className="seat-info">
-        <span className="seat-name">{player.name}</span>
+        <span className="seat-name">
+          {player.name}
+          {isHandStarter && <span className="first-player-badge">First player</span>}
+        </span>
         <span className="seat-meta">
           {player.score} pts · {player.kind === 'ai' ? 'AI' : 'Human'}
         </span>
@@ -61,6 +66,8 @@ export function GameBoard({ profile, state, onAction, onBackToSetup, onLeave }: 
   const isHumanTurn = isLocallyControlledHuman(state, LOCAL_PLAYER_SEAT)
   const opponents = getOpponents(state.players)
   const logEntries = useMemo(() => [...state.log].reverse(), [state.log])
+  const handStarter = state.players[state.handStarterIndex]
+  const helpText = profile.metadata.help ?? profile.metadata.description ?? ''
 
   const matchingPlay = validPlays.find(
     (play) =>
@@ -93,7 +100,12 @@ export function GameBoard({ profile, state, onAction, onBackToSetup, onLeave }: 
   return (
     <div className="game-board">
       <header className="game-top-bar">
-        <h2>{profile.metadata.name}</h2>
+        <div className="game-title-block">
+          <h2>{profile.metadata.name}</h2>
+          <p className="game-hand-leader">
+            First player this hand: <strong>{handStarter.name}</strong>
+          </p>
+        </div>
       </header>
 
       <HelpModal
@@ -101,7 +113,7 @@ export function GameBoard({ profile, state, onAction, onBackToSetup, onLeave }: 
         title={`${profile.metadata.name} — rules`}
         onClose={() => setHelpOpen(false)}
       >
-        <p>{profile.metadata.description}</p>
+        <div className="help-rules">{helpText}</div>
       </HelpModal>
 
       <div className="poker-table">
@@ -113,6 +125,7 @@ export function GameBoard({ profile, state, onAction, onBackToSetup, onLeave }: 
               player={player}
               totalPlayers={state.players.length}
               isActive={state.currentPlayerIndex === playerIndex && state.phase === 'playing'}
+              isHandStarter={playerIndex === state.handStarterIndex}
             />
           )
         })}
@@ -149,7 +162,12 @@ export function GameBoard({ profile, state, onAction, onBackToSetup, onLeave }: 
         className={`local-player ${isHumanTurn ? 'local-player--active' : ''} ${state.currentPlayerIndex === state.players.indexOf(localPlayer) && state.phase === 'playing' ? 'seat--active' : ''}`}
       >
         <div className="local-player-header">
-          <span className="seat-name">{localPlayer.name}</span>
+          <span className="seat-name">
+            {localPlayer.name}
+            {state.handStarterIndex === state.players.indexOf(localPlayer) && (
+              <span className="first-player-badge">First player</span>
+            )}
+          </span>
           <span className="seat-meta">
             {localPlayer.score} pts
             {isHumanTurn ? ' · your turn' : ''}

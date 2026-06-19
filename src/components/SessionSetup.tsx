@@ -4,11 +4,12 @@ import {
   remoteHumanSeats,
   resizeSessionSetup,
   seatDisplayName,
+  seatLabelForSetup,
   updateSeatKind,
   validateSessionSetup,
   type SetupStepDefinition,
 } from '../core/session/setup'
-import type { SessionSetup as SessionSetupState } from '../core/session/types'
+import type { FirstPlayerMode, SessionSetup as SessionSetupState } from '../core/session/types'
 
 interface SessionSetupProps {
   profile: GameProfile
@@ -40,21 +41,32 @@ export function SessionSetup({
     onChange(updateSeatKind(setup, seatIndex, kind, steps))
   }
 
+  function setFirstPlayerMode(mode: FirstPlayerMode) {
+    onChange({ ...setup, firstPlayerMode: mode })
+  }
+
+  function setFirstPlayerSeat(seatIndex: number) {
+    onChange({ ...setup, firstPlayerSeat: seatIndex })
+  }
+
   return (
     <section className="session-setup panel">
       <h2>{profile.metadata.name} — session setup</h2>
       <p className="hint">Complete each step before starting the game.</p>
 
-      {steps.map((step) => (
+      {steps.map((step, index) => (
         <SetupStepPanel
           key={step.id}
           step={step}
+          stepNumber={index + 1}
           profile={profile}
           setup={setup}
           hostSeat={hostSeat}
           allowRemoteHumans={allowRemoteHumans}
           onPlayerCountChange={setPlayerCount}
           onSeatKindChange={setSeatKind}
+          onFirstPlayerModeChange={setFirstPlayerMode}
+          onFirstPlayerSeatChange={setFirstPlayerSeat}
         />
       ))}
 
@@ -87,27 +99,33 @@ export function SessionSetup({
 
 interface SetupStepPanelProps {
   step: SetupStepDefinition
+  stepNumber: number
   profile: GameProfile
   setup: SessionSetupState
   hostSeat: number
   allowRemoteHumans: boolean
   onPlayerCountChange: (count: number) => void
   onSeatKindChange: (seatIndex: number, kind: 'human' | 'ai') => void
+  onFirstPlayerModeChange: (mode: FirstPlayerMode) => void
+  onFirstPlayerSeatChange: (seatIndex: number) => void
 }
 
 function SetupStepPanel({
   step,
+  stepNumber,
   profile,
   setup,
   hostSeat,
   allowRemoteHumans,
   onPlayerCountChange,
   onSeatKindChange,
+  onFirstPlayerModeChange,
+  onFirstPlayerSeatChange,
 }: SetupStepPanelProps) {
   if (step.type === 'playerCount') {
     return (
       <div className="setup-step">
-        <h3>1. Player count</h3>
+        <h3>{stepNumber}. Player count</h3>
         <label>
           Players ({profile.spec.players.min}–{profile.spec.players.max})
           <input
@@ -122,9 +140,62 @@ function SetupStepPanel({
     )
   }
 
+  if (step.type === 'firstPlayer') {
+    const manualSeat = setup.seats.find((s) => s.seatIndex === setup.firstPlayerSeat)
+
+    return (
+      <div className="setup-step">
+        <h3>{stepNumber}. First player</h3>
+        <p className="hint">Who leads the first round of the first hand?</p>
+        <div className="first-player-options">
+          <label className="inline">
+            <input
+              type="radio"
+              name="first-player-mode"
+              checked={setup.firstPlayerMode === 'random'}
+              onChange={() => onFirstPlayerModeChange('random')}
+            />
+            Random
+          </label>
+          <label className="inline">
+            <input
+              type="radio"
+              name="first-player-mode"
+              checked={setup.firstPlayerMode === 'manual'}
+              onChange={() => onFirstPlayerModeChange('manual')}
+            />
+            Manual
+          </label>
+        </div>
+        {setup.firstPlayerMode === 'manual' ? (
+          <label>
+            Starting seat
+            <select
+              value={setup.firstPlayerSeat}
+              onChange={(e) => onFirstPlayerSeatChange(Number(e.target.value))}
+            >
+              {setup.seats.map((seat) => (
+                <option key={seat.seatIndex} value={seat.seatIndex}>
+                  Seat #{seat.seatIndex + 1} — {seatLabelForSetup(seat)}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <p className="hint">The starting player will be chosen randomly when the game begins.</p>
+        )}
+        {setup.firstPlayerMode === 'manual' && manualSeat && (
+          <p className="first-player-preview">
+            First player: <strong>{seatLabelForSetup(manualSeat)}</strong>
+          </p>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="setup-step">
-      <h3>2. Seat assignment</h3>
+      <h3>{stepNumber}. Seat assignment</h3>
       <p className="hint">
         The host creates the session. Assign each seat to a human or AI player.
       </p>

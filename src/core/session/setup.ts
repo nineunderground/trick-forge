@@ -3,7 +3,7 @@ import type { SeatConfig, SessionSetup } from './types'
 
 export interface SetupStepDefinition {
   id: string
-  type: 'playerCount' | 'seatAssignment'
+  type: 'playerCount' | 'seatAssignment' | 'firstPlayer'
   hostSeat?: number
   allowRemoteHumans?: boolean
 }
@@ -11,6 +11,7 @@ export interface SetupStepDefinition {
 const DEFAULT_SETUP_STEPS: SetupStepDefinition[] = [
   { id: 'playerCount', type: 'playerCount' },
   { id: 'seats', type: 'seatAssignment', hostSeat: 0, allowRemoteHumans: false },
+  { id: 'firstPlayer', type: 'firstPlayer' },
 ]
 
 export function getSetupSteps(profile: GameProfile): SetupStepDefinition[] {
@@ -22,7 +23,20 @@ export function createDefaultSessionSetup(profile: GameProfile): SessionSetup {
   return {
     playerCount,
     seats: buildSeats(playerCount, getSetupSteps(profile)),
+    firstPlayerMode: 'random',
+    firstPlayerSeat: 0,
   }
+}
+
+export function resolveFirstPlayerSeat(session: SessionSetup): number {
+  if (session.firstPlayerMode === 'random') {
+    return Math.floor(Math.random() * session.playerCount)
+  }
+  return session.firstPlayerSeat
+}
+
+export function seatLabelForSetup(seat: SeatConfig): string {
+  return seatDisplayName(seat)
 }
 
 export function buildSeats(
@@ -63,7 +77,12 @@ export function resizeSessionSetup(
     return { seatIndex, isHost: false, kind: 'ai' as const }
   })
 
-  return { playerCount: clamped, seats }
+  return {
+    ...setup,
+    playerCount: clamped,
+    seats,
+    firstPlayerSeat: Math.min(setup.firstPlayerSeat, clamped - 1),
+  }
 }
 
 export function updateSeatKind(
@@ -113,6 +132,10 @@ export function validateSessionSetup(
   const humanCount = setup.seats.filter((s) => s.kind === 'human').length
   if (humanCount < 1) {
     errors.push('At least one human player is required.')
+  }
+
+  if (setup.firstPlayerSeat < 0 || setup.firstPlayerSeat >= setup.playerCount) {
+    errors.push('First player seat is out of range.')
   }
 
   return errors
