@@ -69,6 +69,10 @@ export function SessionSetup({
   return (
     <section className="session-setup panel">
       <h2>{profile.metadata.name} — session setup</h2>
+      <p className="hint">
+        Profile <code>{profile.metadata.id}</code> v{profile.metadata.version} ·{' '}
+        {profile.spec.players.min}–{profile.spec.players.max} players
+      </p>
       <p className="hint">Complete each step before starting the game.</p>
 
       {steps.map((step, index) => (

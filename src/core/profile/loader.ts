@@ -7,6 +7,11 @@ export interface LoadedProfile {
   sourceLabel: string
 }
 
+async function fetchProfileText(url: string): Promise<Response> {
+  const separator = url.includes('?') ? '&' : '?'
+  return fetch(`${url}${separator}_=${Date.now()}`, { cache: 'no-store' })
+}
+
 export function parseProfileYaml(text: string): LoadedProfile | { errors: string[] } {
   let parsed: unknown
   try {
@@ -27,18 +32,24 @@ export function parseProfileYaml(text: string): LoadedProfile | { errors: string
   }
 }
 
-export async function loadBuiltinProfile(profileId: string): Promise<LoadedProfile | { errors: string[] }> {
+export async function loadBuiltinProfile(
+  profileId: string,
+): Promise<LoadedProfile | { errors: string[] }> {
   const base = import.meta.env.BASE_URL
   const url = `${base}profiles/${profileId}.yaml`
   try {
-    const response = await fetch(url)
+    const response = await fetchProfileText(url)
     if (!response.ok) {
       return { errors: [`Could not load profile "${profileId}" (${response.status})`] }
     }
     const text = await response.text()
     const result = parseProfileYaml(text)
     if ('errors' in result) return result
-    return { ...result, source: 'builtin', sourceLabel: `${result.profile.metadata.name} (bundled)` }
+    return {
+      ...result,
+      source: 'builtin',
+      sourceLabel: `${result.profile.metadata.name} v${result.profile.metadata.version}`,
+    }
   } catch (error) {
     return { errors: [`Error loading profile: ${(error as Error).message}`] }
   }
@@ -46,14 +57,18 @@ export async function loadBuiltinProfile(profileId: string): Promise<LoadedProfi
 
 export async function loadProfileFromUrl(url: string): Promise<LoadedProfile | { errors: string[] }> {
   try {
-    const response = await fetch(url)
+    const response = await fetchProfileText(url.trim())
     if (!response.ok) {
       return { errors: [`Fetch failed (${response.status})`] }
     }
     const text = await response.text()
     const result = parseProfileYaml(text)
     if ('errors' in result) return result
-    return { ...result, source: 'url', sourceLabel: url }
+    return {
+      ...result,
+      source: 'url',
+      sourceLabel: `${result.profile.metadata.name} v${result.profile.metadata.version}`,
+    }
   } catch (error) {
     return {
       errors: [

@@ -3,7 +3,7 @@ kind: GameProfile
 metadata:
   id: skull-king
   name: Skull King
-  version: "1.1"
+  version: "1.2"
   description: >
     Trick-taking pirate adventure for 2–8 players. Bid how many tricks you will win
     each round; score bonuses for exact bids and capturing special cards. Highest

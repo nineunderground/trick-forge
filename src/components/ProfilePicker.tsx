@@ -1,12 +1,9 @@
 import { useRef, useState } from 'react'
 import type { LoadedProfile } from '../core/profile/loader'
-import { loadProfileFromFile, loadProfileFromUrl } from '../core/profile/loader'
+import { loadBuiltinProfile, loadProfileFromFile, loadProfileFromUrl } from '../core/profile/loader'
 
 const DEFAULT_ODIN_PROFILE_URL =
   'https://nineunderground.github.io/trick-forge/profiles/odin.yaml'
-
-const DEFAULT_SKULL_KING_PROFILE_URL =
-  'https://nineunderground.github.io/trick-forge/profiles/skull-king.yaml'
 
 interface ProfilePickerProps {
   onLoaded: (loaded: LoadedProfile) => void
@@ -83,15 +80,15 @@ export function ProfilePicker({ onLoaded }: ProfilePickerProps) {
           type="button"
           disabled={loading}
           onClick={async () => {
-            setUrl(DEFAULT_SKULL_KING_PROFILE_URL)
             setLoading(true)
             setErrors([])
-            const result = await loadProfileFromUrl(DEFAULT_SKULL_KING_PROFILE_URL)
+            const result = await loadBuiltinProfile('skull-king')
             setLoading(false)
             if ('errors' in result) {
               setErrors(result.errors)
               return
             }
+            setUrl(`${import.meta.env.BASE_URL}profiles/skull-king.yaml`)
             onLoaded(result)
           }}
         >
