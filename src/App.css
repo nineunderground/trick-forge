@@ -648,20 +648,21 @@ label {
 }
 
 .table-grid--players-4 {
-  gap: 0.65rem 3rem;
-  grid-template-columns: minmax(11rem, 1.2fr) minmax(11rem, 2.4fr) minmax(11rem, 1.2fr);
+  gap: 0.65rem 2.75rem;
+  grid-template-columns: minmax(10rem, 13rem) minmax(14rem, 1fr) minmax(10rem, 13rem);
+  padding-inline: 0.35rem;
 }
 
 .table-grid--players-4 .seat-wrap--left {
-  justify-content: flex-start;
-  padding-right: 0.75rem;
-  padding-left: 0.25rem;
+  justify-content: flex-end;
+  padding-right: 1.75rem;
+  padding-left: 0.5rem;
 }
 
 .table-grid--players-4 .seat-wrap--right {
-  justify-content: flex-end;
-  padding-left: 0.75rem;
-  padding-right: 0.25rem;
+  justify-content: flex-start;
+  padding-left: 1.75rem;
+  padding-right: 0.5rem;
 }
 
 .table-felt {
