@@ -79,22 +79,12 @@ function App() {
             profile={loaded.profile}
             state={gameState}
             onAction={handleAction}
+            onBackToSetup={() => {
+              setGameState(null)
+              setScreen('setup')
+            }}
+            onLeave={resetToLobby}
           />
-          <div className="game-shell-actions centered-row">
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => {
-                setGameState(null)
-                setScreen('setup')
-              }}
-            >
-              Back to setup
-            </button>
-            <button type="button" className="secondary" onClick={resetToLobby}>
-              Leave game
-            </button>
-          </div>
         </div>
       )}
 

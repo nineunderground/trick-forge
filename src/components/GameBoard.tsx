@@ -10,12 +10,15 @@ import {
 import { LOCAL_PLAYER_SEAT } from '../core/session/types'
 import { CardView, HandBacks } from './CardView'
 import { HelpModal } from './HelpModal'
+import { BackIcon, HelpIcon, IconButton, LeaveIcon } from './IconButton'
 import { getOpponents, getSeatPositionClass } from './table-layout'
 
 interface GameBoardProps {
   profile: GameProfile
   state: ClimbingGameState
   onAction: (action: PlayAction | { type: 'pass' }) => void
+  onBackToSetup: () => void
+  onLeave: () => void
 }
 
 function OpponentSeat({
@@ -44,7 +47,7 @@ function OpponentSeat({
   )
 }
 
-export function GameBoard({ profile, state, onAction }: GameBoardProps) {
+export function GameBoard({ profile, state, onAction, onBackToSetup, onLeave }: GameBoardProps) {
   const localPlayer = getLocalPlayer(state, LOCAL_PLAYER_SEAT)
   const [selected, setSelected] = useState<string[]>([])
   const [takeCardId, setTakeCardId] = useState<string | null>(null)
@@ -91,14 +94,6 @@ export function GameBoard({ profile, state, onAction }: GameBoardProps) {
     <div className="game-board">
       <header className="game-top-bar">
         <h2>{profile.metadata.name}</h2>
-        <button
-          type="button"
-          className="help-button secondary"
-          onClick={() => setHelpOpen(true)}
-          aria-label="Game help"
-        >
-          Help
-        </button>
       </header>
 
       <HelpModal
@@ -147,15 +142,6 @@ export function GameBoard({ profile, state, onAction }: GameBoardProps) {
               <p className="table-empty">Waiting for lead…</p>
             )}
           </div>
-
-          <section className="log log-compact">
-            <h3>Log</h3>
-            <ul>
-              {logEntries.map((entry, i) => (
-                <li key={`${entry}-${i}`}>{entry}</li>
-              ))}
-            </ul>
-          </section>
         </div>
       </div>
 
@@ -203,6 +189,28 @@ export function GameBoard({ profile, state, onAction }: GameBoardProps) {
           </section>
         )}
       </section>
+
+      <footer className="game-bottom-bar">
+        <div className="game-toolbar-icons">
+          <IconButton label="Help" onClick={() => setHelpOpen(true)}>
+            <HelpIcon />
+          </IconButton>
+          <IconButton label="Back to setup" onClick={onBackToSetup}>
+            <BackIcon />
+          </IconButton>
+          <IconButton label="Leave game" onClick={onLeave}>
+            <LeaveIcon />
+          </IconButton>
+        </div>
+
+        <section className="log log-notebook" aria-label="Game log">
+          <ul>
+            {logEntries.map((entry, i) => (
+              <li key={`${entry}-${i}`}>{entry}</li>
+            ))}
+          </ul>
+        </section>
+      </footer>
     </div>
   )
 }
