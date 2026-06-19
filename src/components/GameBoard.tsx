@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { GameProfile } from '../core/profile/schema'
-import type { ClimbingGameState, PlayAction } from '../core/types'
+import type { ClimbingGameState, PlayAction, PlayerState } from '../core/types'
 import {
   canPass,
   getLocalPlayer,
@@ -8,7 +8,9 @@ import {
   isLocallyControlledHuman,
 } from '../core/engines/climbing'
 import { LOCAL_PLAYER_SEAT } from '../core/session/types'
-import { CardView } from './CardView'
+import { CardView, HandBacks } from './CardView'
+import { HelpModal } from './HelpModal'
+import { getOpponents, getSeatPositionClass } from './table-layout'
 
 interface GameBoardProps {
   profile: GameProfile
@@ -16,10 +18,37 @@ interface GameBoardProps {
   onAction: (action: PlayAction | { type: 'pass' }) => void
 }
 
+function OpponentSeat({
+  player,
+  totalPlayers,
+  isActive,
+}: {
+  player: PlayerState
+  totalPlayers: number
+  isActive: boolean
+}) {
+  const position = getSeatPositionClass(player.seatIndex, totalPlayers)
+
+  return (
+    <div className={`seat seat--${position} ${isActive ? 'seat--active' : ''}`}>
+      <div className="seat-info">
+        <span className="seat-name">{player.name}</span>
+        <span className="seat-meta">
+          {player.score} pts · {player.kind === 'ai' ? 'AI' : 'Human'}
+        </span>
+      </div>
+      <div className="seat-cards centered-row">
+        <HandBacks count={player.hand.length} />
+      </div>
+    </div>
+  )
+}
+
 export function GameBoard({ profile, state, onAction }: GameBoardProps) {
   const localPlayer = getLocalPlayer(state, LOCAL_PLAYER_SEAT)
   const [selected, setSelected] = useState<string[]>([])
   const [takeCardId, setTakeCardId] = useState<string | null>(null)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   const validPlays = useMemo(
     () => getValidPlays(state, localPlayer.hand),
@@ -27,6 +56,8 @@ export function GameBoard({ profile, state, onAction }: GameBoardProps) {
   )
 
   const isHumanTurn = isLocallyControlledHuman(state, LOCAL_PLAYER_SEAT)
+  const opponents = getOpponents(state.players)
+  const logEntries = useMemo(() => [...state.log].reverse(), [state.log])
 
   const matchingPlay = validPlays.find(
     (play) =>
@@ -58,52 +89,88 @@ export function GameBoard({ profile, state, onAction }: GameBoardProps) {
 
   return (
     <div className="game-board">
-      <header className="game-header">
+      <header className="game-top-bar">
         <h2>{profile.metadata.name}</h2>
-        <p className="subtitle">{profile.metadata.description}</p>
+        <button
+          type="button"
+          className="help-button secondary"
+          onClick={() => setHelpOpen(true)}
+          aria-label="Game help"
+        >
+          Help
+        </button>
       </header>
 
-      <section className="scoreboard">
-        {state.players.map((player, index) => (
-          <div
-            key={player.id}
-            className={`score-row ${state.currentPlayerIndex === index && state.phase === 'playing' ? 'active' : ''}`}
-          >
-            <span>
-              {player.name}
-              {player.kind === 'human' && !player.isHost ? ' · remote' : ''}
-            </span>
-            <span>{player.kind === 'ai' ? 'AI' : 'Human'}</span>
-            <span>{player.score} pts</span>
-            <span>{player.hand.length} cards</span>
-          </div>
-        ))}
-      </section>
+      <HelpModal
+        open={helpOpen}
+        title={`${profile.metadata.name} — rules`}
+        onClose={() => setHelpOpen(false)}
+      >
+        <p>{profile.metadata.description}</p>
+      </HelpModal>
 
-      {state.table && (
-        <section className="table-area">
-          <h3>Table</h3>
-          <div className="card-row">
-            {state.table.cards.map((card) => (
-              <CardView
-                key={card.id}
-                card={card}
-                selected={takeCardId === card.id}
-                disabled={!mustTake}
-                onClick={() => mustTake && setTakeCardId(card.id)}
-              />
-            ))}
-          </div>
-          <p className="hint">
-            Play by {state.players.find((p) => p.id === state.table!.playedBy)?.name}
-            {mustTake && ' — pick a card to take'}
-          </p>
-        </section>
-      )}
+      <div className="poker-table">
+        {opponents.map((player) => {
+          const playerIndex = state.players.indexOf(player)
+          return (
+            <OpponentSeat
+              key={player.id}
+              player={player}
+              totalPlayers={state.players.length}
+              isActive={state.currentPlayerIndex === playerIndex && state.phase === 'playing'}
+            />
+          )
+        })}
 
-      <section className="hand-area">
-        <h3>Your hand {isHumanTurn ? '(your turn)' : ''}</h3>
-        <div className="card-row">
+        <div className="table-center">
+          <div className="table-felt">
+            {state.table ? (
+              <>
+                <p className="table-label">Table</p>
+                <div className="card-row centered-row">
+                  {state.table.cards.map((card) => (
+                    <CardView
+                      key={card.id}
+                      card={card}
+                      selected={takeCardId === card.id}
+                      disabled={!mustTake}
+                      onClick={() => mustTake && setTakeCardId(card.id)}
+                    />
+                  ))}
+                </div>
+                <p className="hint table-hint">
+                  Play by {state.players.find((p) => p.id === state.table!.playedBy)?.name}
+                  {mustTake && ' — pick a card to take'}
+                </p>
+              </>
+            ) : (
+              <p className="table-empty">Waiting for lead…</p>
+            )}
+          </div>
+
+          <section className="log log-compact">
+            <h3>Log</h3>
+            <ul>
+              {logEntries.map((entry, i) => (
+                <li key={`${entry}-${i}`}>{entry}</li>
+              ))}
+            </ul>
+          </section>
+        </div>
+      </div>
+
+      <section
+        className={`local-player ${isHumanTurn ? 'local-player--active' : ''} ${state.currentPlayerIndex === state.players.indexOf(localPlayer) && state.phase === 'playing' ? 'seat--active' : ''}`}
+      >
+        <div className="local-player-header">
+          <span className="seat-name">{localPlayer.name}</span>
+          <span className="seat-meta">
+            {localPlayer.score} pts
+            {isHumanTurn ? ' · your turn' : ''}
+          </span>
+        </div>
+
+        <div className="card-row centered-row local-hand">
           {localPlayer.hand.map((card) => (
             <CardView
               key={card.id}
@@ -114,36 +181,27 @@ export function GameBoard({ profile, state, onAction }: GameBoardProps) {
             />
           ))}
         </div>
-      </section>
 
-      {state.phase === 'finished' ? (
-        <p className="banner finished">Game over</p>
-      ) : (
-        <section className="actions">
-          <button
-            type="button"
-            disabled={!isHumanTurn || !matchingPlay || (mustTake && !takeCardId)}
-            onClick={submitPlay}
-          >
-            Play selection
-          </button>
-          <button
-            type="button"
-            disabled={!isHumanTurn || !canPass(state)}
-            onClick={() => onAction({ type: 'pass' })}
-          >
-            Pass
-          </button>
-        </section>
-      )}
-
-      <section className="log">
-        <h3>Log</h3>
-        <ul>
-          {[...state.log].reverse().slice(0, 12).map((entry, i) => (
-            <li key={`${entry}-${i}`}>{entry}</li>
-          ))}
-        </ul>
+        {state.phase === 'finished' ? (
+          <p className="banner finished">Game over</p>
+        ) : (
+          <section className="actions centered-row">
+            <button
+              type="button"
+              disabled={!isHumanTurn || !matchingPlay || (mustTake && !takeCardId)}
+              onClick={submitPlay}
+            >
+              Play selection
+            </button>
+            <button
+              type="button"
+              disabled={!isHumanTurn || !canPass(state)}
+              onClick={() => onAction({ type: 'pass' })}
+            >
+              Pass
+            </button>
+          </section>
+        )}
       </section>
     </div>
   )

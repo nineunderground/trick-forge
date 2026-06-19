@@ -44,11 +44,13 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <header className="hero">
-        <h1>TrickForge</h1>
-        <p>Browser card engine · YAML profiles · humans and AIs</p>
-      </header>
+    <div className={`app ${screen === 'game' ? 'app--game' : ''}`}>
+      {screen !== 'game' && (
+        <header className="hero">
+          <h1>TrickForge</h1>
+          <p>Browser card engine · YAML profiles · humans and AIs</p>
+        </header>
+      )}
 
       {screen === 'lobby' && <Lobby onCreateGame={() => setScreen('profile')} />}
 
@@ -72,33 +74,37 @@ function App() {
       )}
 
       {screen === 'game' && loaded && gameState && (
-        <>
+        <div className="game-shell">
           <GameBoard
             profile={loaded.profile}
             state={gameState}
             onAction={handleAction}
           />
-          <button
-            type="button"
-            className="secondary reset"
-            onClick={() => {
-              setGameState(null)
-              setScreen('setup')
-            }}
-          >
-            Back to setup
-          </button>
-          <button type="button" className="secondary reset" onClick={resetToLobby}>
-            Leave game
-          </button>
-        </>
+          <div className="game-shell-actions centered-row">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => {
+                setGameState(null)
+                setScreen('setup')
+              }}
+            >
+              Back to setup
+            </button>
+            <button type="button" className="secondary" onClick={resetToLobby}>
+              Leave game
+            </button>
+          </div>
+        </div>
       )}
 
-      <footer>
-        <small>
-          TrickForge — the full engine runs in your browser. Deploy on GitHub Pages with no backend.
-        </small>
-      </footer>
+      {screen !== 'game' && (
+        <footer>
+          <small>
+            TrickForge — the full engine runs in your browser. Deploy on GitHub Pages with no backend.
+          </small>
+        </footer>
+      )}
     </div>
   )
 }

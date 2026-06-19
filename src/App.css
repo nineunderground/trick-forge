@@ -25,6 +25,27 @@ body {
   color: #f8fafc;
 }
 
+.app.app--game {
+  max-width: none;
+  width: 100%;
+  min-height: 100vh;
+  padding: 0.75rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.game-shell-actions {
+  margin-top: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+
 .hero {
   text-align: center;
   margin-bottom: 2rem;
@@ -42,12 +63,23 @@ body {
 
 .profile-picker,
 .panel,
-.setup,
-.game-board {
+.setup {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
   padding: 1.5rem;
+  backdrop-filter: blur(8px);
+}
+
+.game-board {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 0.75rem 1rem 1rem;
   backdrop-filter: blur(8px);
 }
 
@@ -135,6 +167,11 @@ label {
   gap: 0.5rem;
 }
 
+.centered-row {
+  justify-content: center;
+  align-items: center;
+}
+
 .card {
   width: 64px;
   height: 90px;
@@ -147,6 +184,54 @@ label {
   justify-content: center;
   cursor: pointer;
   font-weight: 700;
+  flex-shrink: 0;
+}
+
+.card-back {
+  background: linear-gradient(145deg, #1e3a5f 0%, #0f172a 100%);
+  border-color: #475569;
+  cursor: default;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+.card-back::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 2px dashed rgba(148, 163, 184, 0.35);
+  border-radius: 6px;
+}
+
+.hand-backs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 68px;
+}
+
+.card-count-badge {
+  position: absolute;
+  right: -0.35rem;
+  bottom: -0.35rem;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: #6366f1;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.hand-empty-label {
+  opacity: 0.5;
+  font-size: 0.85rem;
 }
 
 .card.small {
@@ -180,18 +265,259 @@ label {
   margin-top: 1.25rem;
 }
 
+.game-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  position: relative;
+  padding: 0.25rem 0 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.game-top-bar h2 {
+  margin: 0;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+.help-button {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.9rem;
+}
+
+.poker-table {
+  position: relative;
+  flex: 1;
+  min-height: 340px;
+  margin: 0.5rem 0;
+}
+
+.table-center {
+  position: absolute;
+  inset: 18% 22% 28%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+
+.table-center * {
+  pointer-events: auto;
+}
+
+.table-felt {
+  width: 100%;
+  max-width: 520px;
+  min-height: 140px;
+  padding: 1rem;
+  border-radius: 999px;
+  background: radial-gradient(ellipse at center, #14532d 0%, #0f3d22 55%, #052e16 100%);
+  border: 4px solid rgba(134, 239, 172, 0.15);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.table-label,
+.table-empty {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.table-hint {
+  margin: 0.5rem 0 0;
+}
+
+.seat {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 120px;
+  max-width: 220px;
+  padding: 0.5rem 0.65rem;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.seat--active,
+.local-player--active {
+  border-color: rgba(99, 102, 241, 0.65);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+}
+
+.seat-info,
+.local-player-header {
+  text-align: center;
+}
+
+.seat-name {
+  display: block;
+  font-weight: 600;
+}
+
+.seat-meta {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.seat--top {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.seat--bottom {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.seat--left {
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+}
+
+.seat--right {
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+}
+
+.seat--top-left {
+  top: 4%;
+  left: 8%;
+}
+
+.seat--top-right {
+  top: 4%;
+  right: 8%;
+}
+
+.seat--bottom-left {
+  bottom: 8%;
+  left: 10%;
+}
+
+.seat--bottom-right {
+  bottom: 8%;
+  right: 10%;
+}
+
+.local-player {
+  margin-top: auto;
+  padding: 0.75rem 1rem 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.45);
+  border-radius: 0 0 12px 12px;
+}
+
+.local-hand {
+  margin: 0.65rem 0;
+  min-height: 96px;
+}
+
+.log-compact {
+  width: 100%;
+  max-width: 420px;
+  margin: 0;
+}
+
+.log-compact h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
 .log ul {
   list-style: none;
   padding: 0;
   margin: 0;
-  max-height: 180px;
+  max-height: 4.5rem;
   overflow-y: auto;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+  scroll-behavior: smooth;
 }
 
 .log li {
-  padding: 0.2rem 0;
+  padding: 0.25rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  width: min(560px, 100%);
+  max-height: min(80vh, 640px);
+  overflow: auto;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.modal-close {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  line-height: 1;
+  font-size: 1.4rem;
+}
+
+.modal-body p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+@media (min-width: 1200px) {
+  .app.app--game {
+    padding: 0.75rem 2rem 1rem;
+  }
+
+  .poker-table {
+    min-height: 420px;
+  }
+
+  .table-center {
+    inset: 16% 18% 26%;
+  }
 }
 
 .banner.finished {
