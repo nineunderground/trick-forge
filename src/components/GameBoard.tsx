@@ -341,7 +341,7 @@ export function GameBoard({
         {matchStarted && state && (
           <DiscardPile cards={state.discard} />
         )}
-        <div className="table-grid">
+        <div className={`table-grid table-grid--players-${playerCount}`}>
           {opponents.map((player) => {
             const playerIndex = state ? state.players.indexOf(player as PlayerState) : -1
             const position = getSeatPositionClass(player.seatIndex, playerCount)
