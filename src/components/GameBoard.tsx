@@ -14,6 +14,7 @@ import {
 import { CardView, FactionBadge, HandBacks } from './CardView'
 import { ConfirmModal } from './ConfirmModal'
 import { HelpModal } from './HelpModal'
+import { RulesHelpPanel } from './RulesHelpPanel'
 import { BackIcon, HelpIcon, IconButton, LeaveIcon } from './IconButton'
 import {
   animationOriginForPosition,
@@ -21,6 +22,7 @@ import {
   getSeatGridArea,
   getSeatPositionClass,
 } from './table-layout'
+import { getProfileRules } from '../content/odin-rules'
 
 const PLAY_ANIM_MS = 520
 const AI_TURN_DELAY_MS = 720
@@ -95,6 +97,7 @@ export function GameBoard({
   const prevLogLen = useRef(0)
 
   const helpText = profile.metadata.help ?? profile.metadata.description ?? ''
+  const rulesDocument = getProfileRules(profile.metadata.id)
   const playerCount = session.playerCount
 
   const previewSeats = session.seats.filter((s) => s.seatIndex !== LOCAL_PLAYER_SEAT)
@@ -214,9 +217,14 @@ export function GameBoard({
       <HelpModal
         open={helpOpen}
         title={`${profile.metadata.name} — rules`}
+        variant={rulesDocument ? 'rules' : 'default'}
         onClose={() => setHelpOpen(false)}
       >
-        <div className="help-rules">{helpText}</div>
+        {rulesDocument ? (
+          <RulesHelpPanel document={rulesDocument} />
+        ) : (
+          <div className="help-rules help-rules--plain">{helpText}</div>
+        )}
       </HelpModal>
 
       <ConfirmModal

@@ -5,15 +5,22 @@ interface HelpModalProps {
   title: string
   onClose: () => void
   children: ReactNode
+  variant?: 'default' | 'rules'
 }
 
-export function HelpModal({ open, title, onClose, children }: HelpModalProps) {
+export function HelpModal({
+  open,
+  title,
+  onClose,
+  children,
+  variant = 'default',
+}: HelpModalProps) {
   if (!open) return null
 
   return (
-    <div className="modal-overlay" onClick={onClose} role="presentation">
+    <div className="modal-overlay modal-overlay--rules" onClick={onClose} role="presentation">
       <div
-        className="modal"
+        className={`modal ${variant === 'rules' ? 'modal--rules' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="help-modal-title"
