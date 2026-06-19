@@ -56,22 +56,22 @@ export function ProfilePicker({ onLoaded }: ProfilePickerProps) {
 
   return (
     <div className="profile-picker">
-      <h2>Cargar perfil de juego</h2>
+      <h2>Load game profile</h2>
       <p>
-        Los perfiles definen las reglas en YAML. Puedes usar el incluido, subir uno
-        propio o cargarlo desde una URL externa.
+        Profiles define game rules in YAML. Use the bundled one, upload your own,
+        or load one from an external URL.
       </p>
 
       <div className="picker-actions">
         <button type="button" disabled={loading} onClick={() => handleBuiltin('odin')}>
-          Odin (incluido)
+          Odin (bundled)
         </button>
         <button
           type="button"
           disabled={loading}
           onClick={() => fileRef.current?.click()}
         >
-          Subir YAML
+          Upload YAML
         </button>
         <input
           ref={fileRef}
@@ -85,16 +85,16 @@ export function ProfilePicker({ onLoaded }: ProfilePickerProps) {
       <div className="url-load">
         <input
           type="url"
-          placeholder="https://ejemplo.com/mi-juego.yaml"
+          placeholder="https://example.com/my-game.yaml"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
         <button type="button" disabled={loading || !url.trim()} onClick={handleUrl}>
-          Cargar URL
+          Load URL
         </button>
       </div>
 
-      {loading && <p className="hint">Cargando perfil…</p>}
+      {loading && <p className="hint">Loading profile…</p>}
 
       {errors.length > 0 && (
         <ul className="errors">
@@ -105,7 +105,7 @@ export function ProfilePicker({ onLoaded }: ProfilePickerProps) {
       )}
 
       <p className="hint">
-        Especificación del formato YAML: <code>spec/profile-spec.md</code> en el repositorio.
+        YAML format specification: <code>spec/profile-spec.md</code> in the repository.
       </p>
     </div>
   )

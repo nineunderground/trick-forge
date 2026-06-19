@@ -70,14 +70,14 @@ export function GameBoard({ profile, state, onAction }: GameBoardProps) {
           >
             <span>{player.name}</span>
             <span>{player.score} pts</span>
-            <span>{player.hand.length} cartas</span>
+            <span>{player.hand.length} cards</span>
           </div>
         ))}
       </section>
 
       {state.table && (
         <section className="table-area">
-          <h3>Mesa</h3>
+          <h3>Table</h3>
           <div className="card-row">
             {state.table.cards.map((card) => (
               <CardView
@@ -90,14 +90,14 @@ export function GameBoard({ profile, state, onAction }: GameBoardProps) {
             ))}
           </div>
           <p className="hint">
-            Jugada de {state.players.find((p) => p.id === state.table!.playedBy)?.name}
-            {mustTake && ' — elige una carta para tomar'}
+            Play by {state.players.find((p) => p.id === state.table!.playedBy)?.name}
+            {mustTake && ' — pick a card to take'}
           </p>
         </section>
       )}
 
       <section className="hand-area">
-        <h3>Tu mano {isHumanTurn ? '(tu turno)' : ''}</h3>
+        <h3>Your hand {isHumanTurn ? '(your turn)' : ''}</h3>
         <div className="card-row">
           {human.hand.map((card) => (
             <CardView
@@ -112,7 +112,7 @@ export function GameBoard({ profile, state, onAction }: GameBoardProps) {
       </section>
 
       {state.phase === 'finished' ? (
-        <p className="banner finished">Partida terminada</p>
+        <p className="banner finished">Game over</p>
       ) : (
         <section className="actions">
           <button
@@ -120,20 +120,20 @@ export function GameBoard({ profile, state, onAction }: GameBoardProps) {
             disabled={!isHumanTurn || !matchingPlay || (mustTake && !takeCardId)}
             onClick={submitPlay}
           >
-            Jugar selección
+            Play selection
           </button>
           <button
             type="button"
             disabled={!isHumanTurn || !canPass(state)}
             onClick={() => onAction({ type: 'pass' })}
           >
-            Pasar
+            Pass
           </button>
         </section>
       )}
 
       <section className="log">
-        <h3>Registro</h3>
+        <h3>Log</h3>
         <ul>
           {[...state.log].reverse().slice(0, 12).map((entry, i) => (
             <li key={`${entry}-${i}`}>{entry}</li>

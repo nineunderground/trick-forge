@@ -45,7 +45,7 @@ export function isValidSet(cards: Card[]): boolean {
 export function cardsByIds(hand: Card[], ids: string[]): Card[] {
   return ids.map((id) => {
     const card = hand.find((c) => c.id === id)
-    if (!card) throw new Error(`Carta no encontrada: ${id}`)
+    if (!card) throw new Error(`Card not found: ${id}`)
     return card
   })
 }

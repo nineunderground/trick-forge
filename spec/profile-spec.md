@@ -1,9 +1,9 @@
 # TrickForge Profile Specification (v1)
 
-Los perfiles definen un juego completo en YAML. El motor del cliente interpreta el perfil
-y ejecuta las reglas sin código adicional para juegos soportados por la familia indicada.
+Profiles define a complete game in YAML. The client engine interprets the profile
+and runs the rules without extra code for games supported by the declared family.
 
-## Estructura mínima
+## Minimum structure
 
 ```yaml
 apiVersion: trickforge/v1
@@ -26,28 +26,28 @@ spec:
     cardsPerPlayer: 9
   scoring: { ... }
   rules:
-    climbing: { ... }   # si family = climbing
-    trickTaking: { ... } # reservado para futuros perfiles
+    climbing: { ... }    # when family = climbing
+    trickTaking: { ... } # reserved for future profiles
 ```
 
-## Familias soportadas
+## Supported families
 
-| Familia        | Estado   | Descripción                                      |
+| Family         | Status   | Description                                      |
 |----------------|----------|--------------------------------------------------|
-| `climbing`     | MVP      | Escalada / ladder (Odin, Big Two, etc.)          |
-| `trick-taking` | planeado | Bazas, palo líder, obligación de seguir, etc.    |
+| `climbing`     | MVP      | Climbing / ladder games (Odin, Big Two, etc.)    |
+| `trick-taking` | planned  | Tricks, lead suit, follow suit, etc.             |
 
-## Carga de perfiles
+## Loading profiles
 
-1. **Incluidos**: archivos en `public/profiles/` servidos por GitHub Pages.
-2. **Subida local**: el usuario selecciona un `.yaml` desde su dispositivo.
-3. **URL externa**: fetch desde otra URL (requiere CORS en el servidor origen).
+1. **Bundled**: files under `public/profiles/` served by GitHub Pages.
+2. **Local upload**: user selects a `.yaml` file from their device.
+3. **External URL**: fetch from another URL (origin server must allow CORS).
 
-## Validación
+## Validation
 
-El cliente valida el YAML con un esquema Zod antes de iniciar la partida.
-Errores de validación se muestran en la UI sin ejecutar el motor.
+The client validates YAML with a Zod schema before starting a game.
+Validation errors are shown in the UI without running the engine.
 
-## Perfil de referencia
+## Reference profile
 
-Ver `public/profiles/odin.yaml`.
+See `public/profiles/odin.yaml`.

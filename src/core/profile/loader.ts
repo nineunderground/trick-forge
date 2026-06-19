@@ -12,7 +12,7 @@ export function parseProfileYaml(text: string): LoadedProfile | { errors: string
   try {
     parsed = yaml.load(text)
   } catch (error) {
-    return { errors: [`YAML inválido: ${(error as Error).message}`] }
+    return { errors: [`Invalid YAML: ${(error as Error).message}`] }
   }
 
   const validation = validateProfile(parsed)
@@ -33,14 +33,14 @@ export async function loadBuiltinProfile(profileId: string): Promise<LoadedProfi
   try {
     const response = await fetch(url)
     if (!response.ok) {
-      return { errors: [`No se pudo cargar el perfil "${profileId}" (${response.status})`] }
+      return { errors: [`Could not load profile "${profileId}" (${response.status})`] }
     }
     const text = await response.text()
     const result = parseProfileYaml(text)
     if ('errors' in result) return result
-    return { ...result, source: 'builtin', sourceLabel: `${result.profile.metadata.name} (incluido)` }
+    return { ...result, source: 'builtin', sourceLabel: `${result.profile.metadata.name} (bundled)` }
   } catch (error) {
-    return { errors: [`Error al cargar perfil: ${(error as Error).message}`] }
+    return { errors: [`Error loading profile: ${(error as Error).message}`] }
   }
 }
 
@@ -48,7 +48,7 @@ export async function loadProfileFromUrl(url: string): Promise<LoadedProfile | {
   try {
     const response = await fetch(url)
     if (!response.ok) {
-      return { errors: [`Fetch fallido (${response.status})`] }
+      return { errors: [`Fetch failed (${response.status})`] }
     }
     const text = await response.text()
     const result = parseProfileYaml(text)
@@ -57,7 +57,7 @@ export async function loadProfileFromUrl(url: string): Promise<LoadedProfile | {
   } catch (error) {
     return {
       errors: [
-        `No se pudo obtener la URL. ¿CORS habilitado en el servidor? ${(error as Error).message}`,
+        `Could not fetch URL. Is CORS enabled on the server? ${(error as Error).message}`,
       ],
     }
   }

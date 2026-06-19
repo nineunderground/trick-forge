@@ -5,8 +5,8 @@ metadata:
   name: Odin
   version: "1.0"
   description: >
-    Juego de escalada (climbing). Vacía la mano lo antes posible; cada carta
-    que te quede al final de la mano vale 1 punto. Gana quien tenga menos puntos.
+    Climbing card game. Empty your hand as fast as possible; each card left
+    at the end of a hand is worth 1 point. Lowest score wins.
   authors:
     - Helvetiq
   tags:

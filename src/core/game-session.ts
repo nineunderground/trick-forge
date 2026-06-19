@@ -18,7 +18,7 @@ export function createGame(
   )
 
   if (profile.spec.family !== 'climbing') {
-    throw new Error(`Familia no soportada: ${profile.spec.family}`)
+    throw new Error(`Unsupported family: ${profile.spec.family}`)
   }
 
   const state = initClimbingGame(profile, clamped, humanIndex)

@@ -78,21 +78,21 @@ export const gameProfileSchema = z
     if (players.default < players.min || players.default > players.max) {
       ctx.addIssue({
         code: 'custom',
-        message: 'players.default debe estar entre min y max',
+        message: 'players.default must be between min and max',
         path: ['spec', 'players', 'default'],
       })
     }
     if (family === 'climbing' && !rules.climbing) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Los perfiles climbing requieren spec.rules.climbing',
+        message: 'climbing profiles require spec.rules.climbing',
         path: ['spec', 'rules', 'climbing'],
       })
     }
     if (family === 'trick-taking') {
       ctx.addIssue({
         code: 'custom',
-        message: 'La familia trick-taking aún no está implementada',
+        message: 'trick-taking family is not implemented yet',
         path: ['spec', 'family'],
       })
     }

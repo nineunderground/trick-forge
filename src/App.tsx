@@ -31,7 +31,7 @@ function App() {
     <div className="app">
       <header className="hero">
         <h1>TrickForge</h1>
-        <p>Motor de cartas en el navegador · perfiles YAML · humanos e IAs</p>
+        <p>Browser card engine · YAML profiles · humans and AIs</p>
       </header>
 
       {!loaded ? (
@@ -39,10 +39,10 @@ function App() {
       ) : !gameState ? (
         <section className="setup">
           <h2>{loaded.profile.metadata.name}</h2>
-          <p>Fuente: {loaded.sourceLabel}</p>
-          <p>Familia: {loaded.profile.spec.family}</p>
+          <p>Source: {loaded.sourceLabel}</p>
+          <p>Family: {loaded.profile.spec.family}</p>
           <label>
-            Jugadores ({loaded.profile.spec.players.min}–{loaded.profile.spec.players.max})
+            Players ({loaded.profile.spec.players.min}–{loaded.profile.spec.players.max})
             <input
               type="number"
               min={loaded.profile.spec.players.min}
@@ -58,10 +58,10 @@ function App() {
                 startGame(loaded.profile, playerCount ?? loaded.profile.spec.players.default)
               }
             >
-              Empezar partida
+              Start game
             </button>
             <button type="button" className="secondary" onClick={() => setLoaded(null)}>
-              Cambiar perfil
+              Change profile
             </button>
           </div>
         </section>
@@ -73,14 +73,14 @@ function App() {
             onAction={handleAction}
           />
           <button type="button" className="secondary reset" onClick={() => setGameState(null)}>
-            Nueva partida
+            New game
           </button>
         </>
       )}
 
       <footer>
         <small>
-          TrickForge — todo el motor corre en tu navegador. Despliega en GitHub Pages sin backend.
+          TrickForge — the full engine runs in your browser. Deploy on GitHub Pages with no backend.
         </small>
       </footer>
     </div>

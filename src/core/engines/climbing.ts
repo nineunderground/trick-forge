@@ -29,7 +29,7 @@ export function createPlayers(
 ): PlayerState[] {
   return Array.from({ length: count }, (_, i) => ({
     id: `p${i}`,
-    name: i === humanIndex ? 'Tú' : `IA ${i}`,
+    name: i === humanIndex ? 'You' : `AI ${i}`,
     kind: i === humanIndex ? 'human' : 'ai',
     hand: [],
     score: 0,
@@ -67,7 +67,7 @@ export function initClimbingGame(
     consecutivePasses: 0,
     mustTakeFromPrevious: false,
     pendingTakeFrom: null,
-    log: [`Nueva mano. ${players[0].name} abre.`],
+    log: [`New hand. ${players[0].name} leads.`],
   }
 }
 
@@ -154,10 +154,10 @@ export function applyAction(
 
   if (action.type === 'pass') {
     if (!canPass(next)) {
-      throw new Error('No puedes pasar si eres el dueño de la mesa')
+      throw new Error('You cannot pass when you own the table')
     }
     player.passed = true
-    next.log.push(`${player.name} pasa.`)
+    next.log.push(`${player.name} passes.`)
     if (allOthersPassed(next)) {
       return resolveAllPass(next, profile)
     }
@@ -173,20 +173,20 @@ export function applyAction(
       [...v.cardIds].sort().join() === [...action.cardIds].sort().join(),
   )
   if (!match) {
-    throw new Error('Jugada inválida')
+    throw new Error('Invalid play')
   }
 
   if (previousTable) {
     const previous = previousTable.cards
     if (!action.takeCardId) {
-      throw new Error('Debes tomar una carta de la jugada anterior')
+      throw new Error('You must take a card from the previous play')
     }
     const taken = previous.find((c) => c.id === action.takeCardId)
     if (!taken) {
-      throw new Error('Carta a tomar inválida')
+      throw new Error('Invalid card to take')
     }
     player.hand.push(taken)
-    next.log.push(`${player.name} toma ${formatCard(taken)}.`)
+    next.log.push(`${player.name} takes ${formatCard(taken)}.`)
   }
 
   player.hand = sortHand(removeCards(player.hand, action.cardIds))
@@ -195,7 +195,7 @@ export function applyAction(
     p.passed = false
   })
   next.table = { cards: played, playedBy: player.id }
-  next.log.push(`${player.name} juega ${formatSet(played)} (${match.value}).`)
+  next.log.push(`${player.name} plays ${formatSet(played)} (${match.value}).`)
 
   if (player.hand.length === 0) {
     return endHand(next, profile)
@@ -221,18 +221,18 @@ function resolveAllPass(
   next.players.forEach((p) => {
     p.passed = false
   })
-  next.log.push('Todos pasan. Nueva ronda.')
+  next.log.push('Everyone passes. New round.')
 
   if (leaderIndex >= 0) {
     const leader = next.players[leaderIndex]
     if (handIsBomb(leader.hand)) {
-      next.log.push(`${leader.name} lanza bomba de mano (${leader.hand.length} cartas).`)
+      next.log.push(`${leader.name} plays a hand bomb (${leader.hand.length} cards).`)
       leader.hand = []
       return endHand(next, profile)
     }
     next.currentPlayerIndex = leaderIndex
     next.handLeaderIndex = leaderIndex
-    next.log.push(`${leader.name} abre la ronda.`)
+    next.log.push(`${leader.name} leads the round.`)
   }
 
   return next
@@ -246,7 +246,7 @@ function endHand(state: ClimbingGameState, profile: GameProfile): ClimbingGameSt
     const penalty = player.hand.length * perCard
     player.score += penalty
     if (penalty > 0) {
-      next.log.push(`${player.name} +${penalty} pts (${player.hand.length} cartas).`)
+      next.log.push(`${player.name} +${penalty} pts (${player.hand.length} cards).`)
     }
   }
 
@@ -255,11 +255,11 @@ function endHand(state: ClimbingGameState, profile: GameProfile): ClimbingGameSt
   if (someoneReached) {
     next.phase = 'finished'
     const winner = [...next.players].sort((a, b) => a.score - b.score)[0]
-    next.log.push(`Fin de partida. Gana ${winner.name} con ${winner.score} pts.`)
+    next.log.push(`Game over. ${winner.name} wins with ${winner.score} pts.`)
     return next
   }
 
-  next.log.push('Fin de mano. Repartiendo...')
+  next.log.push('Hand over. Dealing...')
   return dealNextHand(next, profile)
 }
 
@@ -283,7 +283,7 @@ function dealNextHand(state: ClimbingGameState, profile: GameProfile): ClimbingG
   next.table = null
   next.currentPlayerIndex = (next.handLeaderIndex + 1) % next.players.length
   next.handLeaderIndex = next.currentPlayerIndex
-  next.log.push(`${next.players[next.currentPlayerIndex].name} abre la siguiente mano.`)
+  next.log.push(`${next.players[next.currentPlayerIndex].name} leads the next hand.`)
   return next
 }
 
@@ -301,7 +301,7 @@ export function chooseRandomAiAction(state: ClimbingGameState): PlayerAction {
 
   if (valid.length === 0) {
     if (canPass(state)) return { type: 'pass' }
-    throw new Error('IA sin jugadas posibles al abrir')
+    throw new Error('AI has no legal opening plays')
   }
 
   const pick = valid[Math.floor(Math.random() * valid.length)]

@@ -1,49 +1,47 @@
 # TrickForge
 
-Motor de juegos de cartas que corre **enteramente en el navegador**. Carga perfiles YAML para definir reglas, soporta jugadores humanos e IAs, y se puede publicar en **GitHub Pages** sin backend.
+A **client-side** card game engine. Load YAML profiles to define rules, support human and AI players, and deploy on **GitHub Pages** with no backend.
 
-## Características
+## Features
 
-- Motor cliente en TypeScript (Vite + React)
-- Perfiles de juego en YAML (`trickforge/v1`)
-- Perfil incluido: **Odin** (juego de escalada / climbing)
-- Carga de perfiles: incluidos, subida local, URL externa
-- Jugador humano + IAs aleatorias (extensible)
-- Despliegue estático en `https://<usuario>.github.io/trick-forge/`
+- Client engine in TypeScript (Vite + React)
+- YAML game profiles (`trickforge/v1`)
+- Bundled profile: **Odin** (climbing game)
+- Profile loading: bundled, local upload, external URL
+- Human player + random AIs (extensible)
+- Static deploy at `https://<user>.github.io/trick-forge/`
 
-## Desarrollo local
+## Local development
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Build y GitHub Pages
+## Build and GitHub Pages
 
 ```bash
 GITHUB_PAGES=true npm run build
 ```
 
-El workflow `.github/workflows/deploy.yml` publica automáticamente en cada push a `main`.
+The workflow in `.github/workflows/deploy.yml` publishes automatically on every push to `main`.
 
-### Crear repo privado en GitHub
+### Create a GitHub repository
 
 ```bash
-cd trick-forge
 git init
 git add .
 git commit -m "Initial TrickForge scaffold with Odin profile"
-# Crear repo privado (requiere GitHub CLI: gh auth login)
-gh repo create trick-forge --private --source=. --remote=origin --push
+gh repo create trick-forge --public --source=. --remote=origin --push
 ```
 
-En **Settings → Pages → Build and deployment**, elige **GitHub Actions**.
+In **Settings → Pages → Build and deployment**, choose **GitHub Actions**.
 
-## Perfiles
+## Profiles
 
-Ver [spec/profile-spec.md](./spec/profile-spec.md).
+See [spec/profile-spec.md](./spec/profile-spec.md).
 
-Ejemplo mínimo:
+Minimal example:
 
 ```yaml
 apiVersion: trickforge/v1
@@ -57,14 +55,14 @@ spec:
   # ...
 ```
 
-Los usuarios pueden crear perfiles siguiendo la especificación y compartirlos como archivos `.yaml`.
+Users can author profiles following the spec and share them as `.yaml` files.
 
 ## Roadmap
 
-- [ ] Familia `trick-taking` (Fishing, Skull King, …)
-- [ ] IAs más inteligentes / LLM
-- [ ] Multijugador en red (opcional, requeriría backend)
+- [ ] `trick-taking` family (Fishing, Skull King, …)
+- [ ] Smarter AIs / LLM players
+- [ ] Online multiplayer (optional, would require a backend)
 
-## Nota sobre Odin
+## Note on Odin
 
-Odin es un juego de **escalada** (climbing), no de bazas (trick-taking). TrickForge usa una abstracción por **familias** para soportar ambos estilos con el mismo cargador de perfiles.
+Odin is a **climbing** game, not trick-taking. TrickForge uses **families** so both styles can share the same profile loader.
