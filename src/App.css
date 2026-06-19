@@ -893,6 +893,13 @@ label {
   margin-top: 1rem;
 }
 
+.action-hint {
+  width: 100%;
+  margin: 0 0 0.35rem;
+  text-align: center;
+  font-size: 0.82rem;
+}
+
 footer {
   text-align: center;
   margin-top: 2rem;

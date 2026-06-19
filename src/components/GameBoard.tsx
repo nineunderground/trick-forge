@@ -10,6 +10,7 @@ import {
   getLocalPlayer,
   getValidPlays,
   isLocallyControlledHuman,
+  mustTakeFromTable,
 } from '../core/engines/climbing'
 import { CardView, FactionBadge, HandBacks } from './CardView'
 import { ConfirmModal } from './ConfirmModal'
@@ -151,9 +152,34 @@ export function GameBoard({
       play.cardIds.every((id) => selected.includes(id)),
   )
 
-  const mustTake =
-    Boolean(state?.table && isHumanTurn && localPlayer) &&
-    localPlayer!.hand.length > selected.length
+  const mustTake = Boolean(
+    matchingPlay &&
+      state?.table &&
+      isHumanTurn &&
+      localPlayer &&
+      mustTakeFromTable(state, localPlayer.hand.length, matchingPlay.cardIds.length),
+  )
+
+  useEffect(() => {
+    if (!state?.table || !matchingPlay || !isHumanTurn || !localPlayer) {
+      setTakeCardId(null)
+      return
+    }
+
+    if (!mustTakeFromTable(state, localPlayer.hand.length, matchingPlay.cardIds.length)) {
+      setTakeCardId(null)
+      return
+    }
+
+    if (state.table.cards.length === 1) {
+      setTakeCardId(state.table.cards[0].id)
+      return
+    }
+
+    setTakeCardId((current) =>
+      current && state.table!.cards.some((card) => card.id === current) ? current : null,
+    )
+  }, [state?.table, matchingPlay, isHumanTurn, localPlayer])
 
   const tableAnimStyle = useMemo(() => {
     if (!state?.table) return {}
@@ -199,7 +225,7 @@ export function GameBoard({
     await delay(PLAY_ANIM_MS)
     onAction({
       type: 'play',
-      cardIds: selected,
+      cardIds: matchingPlay.cardIds,
       takeCardId: takeCardId ?? undefined,
     })
     setSelected([])
@@ -324,7 +350,8 @@ export function GameBoard({
                     </div>
                     <p className="hint table-hint">
                       Play by {state.players.find((p) => p.id === state.table!.playedBy)?.name}
-                      {mustTake && ' — pick a card to take'}
+                      {mustTake && state.table.cards.length === 1 && ' — you will take the table card'}
+                      {mustTake && state.table.cards.length > 1 && ' — pick a card to take'}
                     </p>
                   </>
                 ) : (
@@ -387,6 +414,16 @@ export function GameBoard({
 
           {matchStarted && state && state.phase !== 'finished' && (
             <section className="actions centered-row">
+              {isHumanTurn && selected.length > 0 && !matchingPlay && (
+                <p className="hint action-hint">
+                  Cards must share the same colour or the same number, beat the table, and use
+                  {state.table ? ` ${state.table.cards.length} or ${state.table.cards.length + 1}` : ''}{' '}
+                  cards.
+                </p>
+              )}
+              {isHumanTurn && matchingPlay && mustTake && state.table!.cards.length > 1 && !takeCardId && (
+                <p className="hint action-hint">Click a table card to take into your hand.</p>
+              )}
               <button
                 type="button"
                 disabled={!isHumanTurn || !matchingPlay || (mustTake && !takeCardId)}
