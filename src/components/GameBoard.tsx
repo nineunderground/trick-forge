@@ -274,7 +274,8 @@ export function GameBoard({
           <GameScoreboard
             roundNumber={state.roundNumber}
             players={state.players}
-            targetScore={profile.spec.scoring.gameEndThreshold}
+            gameEnd={state.gameEnd}
+            winnerRule={profile.spec.scoring.winner}
           />
         )}
       </header>
@@ -318,11 +319,21 @@ export function GameBoard({
 
       <ScoreSummaryModal
         open={Boolean(state && state.phase === 'round-summary')}
-        title={`Round ${state?.roundNumber ?? 0} complete`}
-        subtitle="Points added for cards left in hand."
+        title={
+          state?.matchEnding
+            ? `Final round (${state.roundNumber})`
+            : `Round ${state?.roundNumber ?? 0} complete`
+        }
+        subtitle={
+          state?.matchEnding
+            ? profile.spec.scoring.winner === 'lowest'
+              ? 'Match ends now. Lowest total score wins — ties share victory.'
+              : 'Match ends now. Highest total score wins — ties share victory.'
+            : 'Points added for cards left in hand.'
+        }
         players={state?.players ?? []}
         deltas={handScoreDeltas}
-        continueLabel="Next round"
+        continueLabel={state?.matchEnding ? 'Finish game' : 'Next round'}
         onContinue={onContinueRound}
       />
 

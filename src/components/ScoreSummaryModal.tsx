@@ -1,4 +1,4 @@
-import type { PlayerState } from '../core/types'
+import type { GameEndConfig, PlayerState } from '../core/types'
 import { FactionBadge } from './CardView'
 
 interface ScoreSummaryModalProps {
@@ -67,24 +67,27 @@ export function ScoreSummaryModal({
 interface GameScoreboardProps {
   roundNumber: number
   players: PlayerState[]
-  targetScore?: number
+  gameEnd: GameEndConfig
+  winnerRule: 'lowest' | 'highest'
 }
 
 export function GameScoreboard({
   roundNumber,
   players,
-  targetScore,
+  gameEnd,
+  winnerRule,
 }: GameScoreboardProps) {
+  const endLabel =
+    gameEnd.mode === 'roundCount'
+      ? `Round ${roundNumber} / ${gameEnd.roundCount}`
+      : `Round ${roundNumber} · End at ${gameEnd.pointThreshold}+ pts`
+
   return (
     <div className="game-scoreboard" aria-label="Match scoreboard">
       <div className="game-scoreboard-meta">
-        <span>Round {roundNumber}</span>
-        {targetScore !== undefined && (
-          <>
-            <span className="game-scoreboard-sep">·</span>
-            <span>Play to {targetScore}</span>
-          </>
-        )}
+        <span>{endLabel}</span>
+        <span className="game-scoreboard-sep">·</span>
+        <span>{winnerRule === 'lowest' ? 'Lowest wins' : 'Highest wins'}</span>
       </div>
       <div className="game-scoreboard-players">
         {players.map((player) => (

@@ -2,6 +2,8 @@ export type SeatKind = 'human' | 'ai'
 
 export type FirstPlayerMode = 'random' | 'manual'
 
+export type GameEndMode = 'roundCount' | 'pointThreshold'
+
 export interface SeatConfig {
   seatIndex: number
   kind: SeatKind
@@ -14,6 +16,9 @@ export interface SessionSetup {
   seats: SeatConfig[]
   firstPlayerMode: FirstPlayerMode
   firstPlayerSeat: number
+  gameEndMode: GameEndMode
+  gameEndRoundCount: number
+  gameEndPointThreshold: number
 }
 
 /** Seat index controlled by this browser session (the game creator). */

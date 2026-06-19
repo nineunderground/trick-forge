@@ -8,6 +8,7 @@ import {
 } from '../cards'
 import type { GameProfile } from '../profile/schema'
 import type { SeatConfig } from '../session/types'
+import type { SessionSetup } from '../session/types'
 import { seatDisplayName } from '../session/setup'
 import type {
   Card,
@@ -61,6 +62,7 @@ export function initClimbingGame(
   profile: GameProfile,
   seats: SeatConfig[],
   handStarterIndex: number,
+  session: SessionSetup,
 ): ClimbingGameState {
   const players = createPlayersFromSeats(seats)
   const deck = dealHands(profile, players)
@@ -77,6 +79,12 @@ export function initClimbingGame(
     allowHandBombOnOpen: false,
     discard: [],
     roundNumber: 1,
+    gameEnd: {
+      mode: session.gameEndMode,
+      roundCount: session.gameEndRoundCount,
+      pointThreshold: session.gameEndPointThreshold,
+    },
+    matchEnding: false,
     lastHandDeltas: [],
     log: [`New hand. ${players[starter].name} leads the first round.`],
   }
@@ -280,24 +288,44 @@ function endHand(state: ClimbingGameState, profile: GameProfile): ClimbingGameSt
     }
   }
 
-  const threshold = profile.spec.scoring.gameEndThreshold
-  const someoneReached = next.players.some((p) => p.score >= threshold)
-  if (someoneReached) {
-    next.phase = 'finished'
-    const minScore = Math.min(...next.players.map((p) => p.score))
-    const winners = next.players.filter((p) => p.score === minScore)
-    if (winners.length > 1) {
-      next.log.push(
-        `Game over. Tie: ${winners.map((w) => w.name).join(', ')} with ${minScore} pts.`,
-      )
-    } else {
-      next.log.push(`Game over. ${winners[0].name} wins with ${minScore} pts.`)
-    }
-    return next
-  }
-
+  next.matchEnding = shouldEndMatch(next)
   next.phase = 'round-summary'
   next.log.push('Round over.')
+  return next
+}
+
+function shouldEndMatch(state: ClimbingGameState): boolean {
+  const { gameEnd } = state
+  if (gameEnd.mode === 'roundCount') {
+    return state.roundNumber >= gameEnd.roundCount
+  }
+  return state.players.some((p) => p.score >= gameEnd.pointThreshold)
+}
+
+function determineWinners(
+  players: PlayerState[],
+  rule: 'lowest' | 'highest',
+): PlayerState[] {
+  const target =
+    rule === 'lowest'
+      ? Math.min(...players.map((p) => p.score))
+      : Math.max(...players.map((p) => p.score))
+  return players.filter((p) => p.score === target)
+}
+
+function finishMatch(state: ClimbingGameState, profile: GameProfile): ClimbingGameState {
+  const next = structuredClone(state)
+  next.phase = 'finished'
+  next.matchEnding = false
+  const winners = determineWinners(next.players, profile.spec.scoring.winner)
+  const winningScore = winners[0]?.score ?? 0
+  if (winners.length > 1) {
+    next.log.push(
+      `Game over. Tie: ${winners.map((w) => w.name).join(', ')} with ${winningScore} pts.`,
+    )
+  } else if (winners[0]) {
+    next.log.push(`Game over. ${winners[0].name} wins with ${winningScore} pts.`)
+  }
   return next
 }
 
@@ -309,8 +337,14 @@ export function continueAfterRoundSummary(
     throw new Error('Not waiting for round summary')
   }
   const next = structuredClone(state)
-  next.roundNumber += 1
   next.lastHandDeltas = []
+
+  if (next.matchEnding) {
+    next.log.push('Match complete.')
+    return finishMatch(next, profile)
+  }
+
+  next.roundNumber += 1
   next.log.push('Dealing next round...')
   return dealNextHand(next, profile)
 }

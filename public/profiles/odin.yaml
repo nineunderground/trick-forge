@@ -92,6 +92,14 @@ spec:
         type: seatAssignment
         hostSeat: 0
         allowRemoteHumans: false
+      - id: gameEnd
+        type: gameEnd
+        defaultMode: pointThreshold
+        defaultRoundCount: 5
+        minRoundCount: 1
+        maxRoundCount: 30
+        minPointThreshold: 1
+        maxPointThreshold: 50
       - id: firstPlayer
         type: firstPlayer
   rules:

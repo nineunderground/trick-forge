@@ -1,11 +1,17 @@
 import type { GameProfile } from '../profile/schema'
-import type { SeatConfig, SessionSetup } from './types'
+import type { GameEndMode, SeatConfig, SessionSetup } from './types'
 
 export interface SetupStepDefinition {
   id: string
-  type: 'playerCount' | 'seatAssignment' | 'firstPlayer'
+  type: 'playerCount' | 'seatAssignment' | 'firstPlayer' | 'gameEnd'
   hostSeat?: number
   allowRemoteHumans?: boolean
+  defaultMode?: 'roundCount' | 'pointThreshold'
+  defaultRoundCount?: number
+  minRoundCount?: number
+  maxRoundCount?: number
+  minPointThreshold?: number
+  maxPointThreshold?: number
 }
 
 const DEFAULT_SETUP_STEPS: SetupStepDefinition[] = [
@@ -30,7 +36,22 @@ export function createDefaultSessionSetup(profile: GameProfile): SessionSetup {
     seats: buildSeats(playerCount, getSetupSteps(profile), factions),
     firstPlayerMode: 'random',
     firstPlayerSeat: 0,
+    gameEndMode: defaultGameEndMode(profile),
+    gameEndRoundCount: defaultGameEndRoundCount(profile),
+    gameEndPointThreshold: profile.spec.scoring?.gameEndThreshold ?? 15,
   }
+}
+
+function gameEndStep(profile: GameProfile): SetupStepDefinition | undefined {
+  return getSetupSteps(profile).find((s) => s.type === 'gameEnd')
+}
+
+function defaultGameEndMode(profile: GameProfile): GameEndMode {
+  return gameEndStep(profile)?.defaultMode ?? 'pointThreshold'
+}
+
+function defaultGameEndRoundCount(profile: GameProfile): number {
+  return gameEndStep(profile)?.defaultRoundCount ?? 5
 }
 
 export function resolveFirstPlayerSeat(session: SessionSetup): number {
@@ -173,6 +194,23 @@ export function validateSessionSetup(
   for (const seat of setup.seats) {
     if (!factions.has(seat.faction)) {
       errors.push(`Invalid faction for seat ${seat.seatIndex + 1}.`)
+    }
+  }
+
+  const endStep = gameEndStep(profile)
+  if (endStep) {
+    if (setup.gameEndMode === 'roundCount') {
+      const min = endStep.minRoundCount ?? 1
+      const max = endStep.maxRoundCount ?? 99
+      if (setup.gameEndRoundCount < min || setup.gameEndRoundCount > max) {
+        errors.push(`Round count must be between ${min} and ${max}.`)
+      }
+    } else {
+      const min = endStep.minPointThreshold ?? 1
+      const max = endStep.maxPointThreshold ?? 999
+      if (setup.gameEndPointThreshold < min || setup.gameEndPointThreshold > max) {
+        errors.push(`Point threshold must be between ${min} and ${max}.`)
+      }
     }
   }
 

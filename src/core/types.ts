@@ -28,6 +28,12 @@ export interface HandScoreDelta {
   delta: number
 }
 
+export interface GameEndConfig {
+  mode: 'roundCount' | 'pointThreshold'
+  roundCount: number
+  pointThreshold: number
+}
+
 export interface TableSet {
   cards: Card[]
   playedBy: string
@@ -48,6 +54,9 @@ export interface ClimbingGameState {
   discard: Card[]
   /** Scoring round number (each round ends when a player empties their hand). */
   roundNumber: number
+  gameEnd: GameEndConfig
+  /** True when the round just ended triggers match end after the summary. */
+  matchEnding: boolean
   lastHandDeltas: HandScoreDelta[]
   log: string[]
 }

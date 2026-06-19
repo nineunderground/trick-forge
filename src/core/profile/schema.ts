@@ -25,9 +25,15 @@ const scoringSchema = z.object({
 
 const setupStepSchema = z.object({
   id: z.string().min(1),
-  type: z.enum(['playerCount', 'seatAssignment', 'firstPlayer']),
+  type: z.enum(['playerCount', 'seatAssignment', 'firstPlayer', 'gameEnd']),
   hostSeat: z.number().int().min(0).optional(),
   allowRemoteHumans: z.boolean().optional(),
+  defaultMode: z.enum(['roundCount', 'pointThreshold']).optional(),
+  defaultRoundCount: z.number().int().min(1).optional(),
+  minRoundCount: z.number().int().min(1).optional(),
+  maxRoundCount: z.number().int().min(1).optional(),
+  minPointThreshold: z.number().int().min(1).optional(),
+  maxPointThreshold: z.number().int().min(1).optional(),
 })
 
 const sessionSchema = z.object({

@@ -10,7 +10,7 @@ import {
   updateSeatFaction,
   type SetupStepDefinition,
 } from '../core/session/setup'
-import type { FirstPlayerMode, SessionSetup as SessionSetupState } from '../core/session/types'
+import type { FirstPlayerMode, GameEndMode, SessionSetup as SessionSetupState } from '../core/session/types'
 
 interface SessionSetupProps {
   profile: GameProfile
@@ -54,6 +54,18 @@ export function SessionSetup({
     onChange(updateSeatFaction(setup, seatIndex, faction))
   }
 
+  function setGameEndMode(mode: GameEndMode) {
+    onChange({ ...setup, gameEndMode: mode })
+  }
+
+  function setGameEndRoundCount(count: number) {
+    onChange({ ...setup, gameEndRoundCount: count })
+  }
+
+  function setGameEndPointThreshold(threshold: number) {
+    onChange({ ...setup, gameEndPointThreshold: threshold })
+  }
+
   return (
     <section className="session-setup panel">
       <h2>{profile.metadata.name} — session setup</h2>
@@ -73,6 +85,9 @@ export function SessionSetup({
           onSeatFactionChange={setSeatFaction}
           onFirstPlayerModeChange={setFirstPlayerMode}
           onFirstPlayerSeatChange={setFirstPlayerSeat}
+          onGameEndModeChange={setGameEndMode}
+          onGameEndRoundCountChange={setGameEndRoundCount}
+          onGameEndPointThresholdChange={setGameEndPointThreshold}
         />
       ))}
 
@@ -115,6 +130,9 @@ interface SetupStepPanelProps {
   onSeatFactionChange: (seatIndex: number, faction: string) => void
   onFirstPlayerModeChange: (mode: FirstPlayerMode) => void
   onFirstPlayerSeatChange: (seatIndex: number) => void
+  onGameEndModeChange: (mode: GameEndMode) => void
+  onGameEndRoundCountChange: (count: number) => void
+  onGameEndPointThresholdChange: (threshold: number) => void
 }
 
 function SetupStepPanel({
@@ -129,6 +147,9 @@ function SetupStepPanel({
   onSeatFactionChange,
   onFirstPlayerModeChange,
   onFirstPlayerSeatChange,
+  onGameEndModeChange,
+  onGameEndRoundCountChange,
+  onGameEndPointThresholdChange,
 }: SetupStepPanelProps) {
   if (step.type === 'playerCount') {
     return (
@@ -144,6 +165,75 @@ function SetupStepPanel({
             onChange={(e) => onPlayerCountChange(Number(e.target.value))}
           />
         </label>
+      </div>
+    )
+  }
+
+  if (step.type === 'gameEnd') {
+    const minRounds = step.minRoundCount ?? 1
+    const maxRounds = step.maxRoundCount ?? 30
+    const minPoints = step.minPointThreshold ?? 1
+    const maxPoints = step.maxPointThreshold ?? 50
+    const winnerHint =
+      profile.spec.scoring.winner === 'lowest'
+        ? 'Lowest total score wins (fewest penalty points in Odin).'
+        : 'Highest total score wins.'
+
+    return (
+      <div className="setup-step">
+        <h3>{stepNumber}. Game end</h3>
+        <p className="hint">Choose how this match ends. {winnerHint}</p>
+        <div className="first-player-options">
+          <label className="inline">
+            <input
+              type="radio"
+              name="game-end-mode"
+              checked={setup.gameEndMode === 'pointThreshold'}
+              onChange={() => onGameEndModeChange('pointThreshold')}
+            />
+            Point threshold
+          </label>
+          <label className="inline">
+            <input
+              type="radio"
+              name="game-end-mode"
+              checked={setup.gameEndMode === 'roundCount'}
+              onChange={() => onGameEndModeChange('roundCount')}
+            />
+            Number of rounds
+          </label>
+        </div>
+        {setup.gameEndMode === 'pointThreshold' ? (
+          <>
+            <label>
+              End after a round where someone reaches
+              <input
+                type="number"
+                min={minPoints}
+                max={maxPoints}
+                value={setup.gameEndPointThreshold}
+                onChange={(e) => onGameEndPointThresholdChange(Number(e.target.value))}
+              />
+              {' '}points or more
+            </label>
+            <p className="hint">
+              The full round is scored first. If several players reach this value in the
+              same round, the winner is decided by total score, not who reached it first.
+            </p>
+          </>
+        ) : (
+          <label>
+            Play exactly
+            <input
+              type="number"
+              min={minRounds}
+              max={maxRounds}
+              value={setup.gameEndRoundCount}
+              onChange={(e) => onGameEndRoundCountChange(Number(e.target.value))}
+            />
+            {' '}rounds
+          </label>
+        )}
       </div>
     )
   }

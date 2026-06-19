@@ -28,6 +28,7 @@ export function createGame(
     profile,
     session.seats,
     resolveFirstPlayerSeat(session),
+    session,
   )
 }
 
